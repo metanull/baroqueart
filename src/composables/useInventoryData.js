@@ -17,12 +17,22 @@ const timelineEvents = ref(timelineEventsData)
 const collections = ref(collectionsData)
 const glossary = ref(glossaryData)
 
-// TODO(#7): derive the offered languages from the translation files that
-// actually exist in the data package. The manifest over-declares 18
-// languages, most without any content — it must not be the source. Until
-// the language story lands this list is empty and English is the only
-// language in play.
-const availableLangs = ref([])
+// Offered content languages — the items-driven rule (#7): exactly the
+// languages the item records are translated into, derived from the
+// items.<lang>.json files present in the installed package. Never from
+// manifest.languages, which over-declares 18 languages, most without any
+// content. The rule and its rationale are documented in dataset.config.js,
+// which derives the same list for the switcher (with its own lazy glob, so
+// the config module does not pull this file's eager JSON into the entry
+// chunk). English first, the rest sorted.
+const itemTranslationLoaders = import.meta.glob('@inventory-data/translations/items.*.json')
+const itemLangCodes = Object.keys(itemTranslationLoaders)
+  .map(path => path.match(/items\.([a-z]{2})\.json$/)?.[1])
+  .filter(Boolean)
+const availableLangs = ref([
+  ...(itemLangCodes.includes('en') ? ['en'] : []),
+  ...itemLangCodes.filter(l => l !== 'en').sort(),
+])
 const defaultLang = 'en'
 
 const enItemTranslations = ref({})
