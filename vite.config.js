@@ -11,7 +11,7 @@ export default defineConfig({
     alias: {
       // viewer-core reads every JSON of the data package through this alias.
       '@inventory-data': fileURLToPath(
-        new URL('./node_modules/@metanull/__DATASET__-data', import.meta.url),
+        new URL('./node_modules/@metanull/baroqueart-data', import.meta.url),
       ),
     },
   },

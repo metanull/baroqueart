@@ -1,5 +1,5 @@
 {
-  "name": "__DATASET__",
+  "name": "baroqueart",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,7 +10,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@metanull/__DATASET__-data": "*",
+    "@metanull/baroqueart-data": "*",
     "@metanull/viewer-core": "^0.2.0",
     "@metanull/viewer-layout": "^0.1.0",
     "marked": "^15.0.0",

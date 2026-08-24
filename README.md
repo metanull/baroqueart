@@ -1,66 +1,48 @@
-# website-template
+# Baroque Art
 
-Template repository for MWNF websites. Every new website repo
-(`metanull/<dataset>`, public) is created **once** from this template — it is
-never installed as a dependency and never updated in existing websites.
+The **Museum With No Frontiers — Discover Baroque Art** website: permanent
+collection, full-text database, country timelines, partners and virtual
+exhibitions, built from the published dataset.
 
 A website is a light, static Vue 3 front-end for one published dataset. It
 combines three `@metanull` packages from GitHub Packages:
 
 | Package | Role |
 | --- | --- |
-| `@metanull/<dataset>-data` | the dataset (JSON + `manifest.json`) |
-| `@metanull/viewer-core` | application engine (routing, data access, i18n, shared views) |
+| `@metanull/baroqueart-data` | the dataset (JSON + `manifest.json`, **private**) |
+| `@metanull/viewer-core` | application engine (routing, data access, i18n) |
 | `@metanull/viewer-layout` | page structure (`PageShell` + sections), themed via `theme/tokens.css` |
 
----
+Because the data package is private, every `npm install` needs authenticated
+access to GitHub Packages. In CI there is nothing to configure: the package
+grants this repository Read under *Manage Actions access*, so the workflow's
+built-in `github.token` can install it — no secret, no PAT. Locally, each
+developer authenticates for themselves, with `npm login --registry=https://npm.pkg.github.com`
+or a personal `~/.npmrc`; the Docker preview reads the token from `.env`.
 
-## Admin — creating a new website
+## Dataset specifics
 
-1. **Use this template.** On this repo's GitHub page, click **Use this
-   template → Create a new repository**. Name it after the dataset
-   (`metanull/<dataset>`), keep it **public**.
-2. **Replace every `__DATASET__` placeholder** with the dataset key
-   (e.g. `islamicart`). The placeholder appears in exactly these places:
-   - `package.json` — the `name` field and the `@metanull/__DATASET__-data` dependency
-   - `vite.config.js` — the `@inventory-data` alias path
-   - `src/dataset.config.js` — `datasetPackage`, `siteName`, `navigation.headerTitle`
-   - `index.html` — the `<title>`
-3. **Grant the new repo access to the dataset package.** On the package page
-   (`github.com/users/metanull/packages/npm/package/<dataset>-data`) →
-   **Package settings → Manage Actions access → Add repository** → the new
-   repo, role **Read**. This is what lets CI install a **private** dataset
-   with its built-in `github.token`; no secret and no PAT is involved. The
-   grant is UI-only, and only affects workflow runs *started after* it — a run
-   that already failed with `403 permission_denied: read_package` has to be
-   re-run.
-4. **Generate the lockfile.** Run `npm install` once (any machine logged in to
-   GitHub Packages, or the Docker container below) and commit
-   `package-lock.json` — CI uses `npm ci` and needs it.
-5. **Switch on the rails** in the new repo's settings:
-   - **Pages** → Build and deployment → Source: **GitHub Actions**.
-   - **Ruleset** for `main`: require pull requests + required status checks
-     (copy the ruleset of an existing website repo).
-   - **General → Allow auto-merge** (needed by the translator flow and Dependabot).
-   - **CodeQL** (Security → Code scanning) and Dependabot alerts.
-6. **Register the website for downstream testing:** add `"metanull/<dataset>"`
-   to `dependents.json` in both `viewer-core` and `viewer-layout`, and grant
-   those two repos **Read** on the dataset package as well (step 3) — their
-   downstream job installs it.
-7. **Update `.github/CODEOWNERS`** with the real reviewers.
-8. **Merge the first PR** (the placeholder replacement). The deploy workflow
-   publishes the site to `https://metanull.github.io/<dataset>/`.
+The dataset is the Discover Baroque Art project (legacy project key `BAR`),
+and it differs from the Islamic Art dataset in ways that shape the site:
 
-The CI, deploy and audit workflows carry an
-`if: github.repository != 'metanull/website-template'` guard so the template
-itself — which has no lockfile and an unresolvable `__DATASET__` dependency —
-does not report failing checks. The condition is false in every repository
-created from the template, so the checks simply run; there is nothing to
-remove.
+- **Single project.** Everything belongs to one project, so there is no
+  project filter anywhere in the interface.
+- **No dynasties and no artistic introduction.** The dataset has neither, so
+  the site has no pages for them. Its collection tree carries a single
+  `purpose` marker, `exhibitions-root`.
+- **Uneven language coverage.** `manifest.languages` declares 18 languages,
+  but each entity is translated into a different subset — items into 5
+  (`cs`, `de`, `en`, `it`, `pt`), collections into 4, partners into 5,
+  glossary into 9, countries into 14. Which languages the site offers, and how
+  it falls back when the chosen one has no file for an entity, is a design
+  decision rather than a lookup.
 
-The deployed base path comes from the `BASE_PATH` environment variable at
-build time; the deploy workflow defaults it to `/<repo>/` for Pages. For a
-root deployment (custom domain), pass `base_path: /` to the deploy workflow.
+## Implementation status
+
+The site currently renders the generic entity pages that `viewer-core`
+generates by default. Replacing them with the real Baroque Art pages is
+tracked by [epic #20](https://github.com/metanull/baroqueart/issues/20) and
+its thirteen stories.
 
 ---
 
@@ -81,7 +63,7 @@ arrives already translated and is not edited here.
    sentence.
 3. **To start a new language**, open `en.json`, copy all of its content, then
    create the new file (Add file → Create new file) named with the two-letter
-   language code, e.g. `ar.json`, paste, and translate the texts.
+   language code, e.g. `it.json`, paste, and translate the texts.
 4. **Click "Commit changes…" then "Propose changes".** GitHub asks nothing
    else — it saves your edit as a proposal.
 5. **Wait for the automatic check.** After a minute or two, the proposal page
@@ -104,12 +86,11 @@ For real design work, use the live preview:
 1. **One-time setup:**
    - Install **Docker Desktop** (docker.com) and **GitHub Desktop**
      (desktop.github.com), each with default settings.
-   - In GitHub Desktop: File → Clone repository → pick this website's repo.
+   - In GitHub Desktop: File → Clone repository → pick this repository.
    - In the cloned folder, copy the file `.env.example` to a new file named
-     exactly `.env`, open it in any text editor and paste your personal
-     GitHub token after `NODE_AUTH_TOKEN=` (the admin will tell you how to
-     create one). It only lets your own computer download the website's
-     building blocks; it is personal, never shared and never committed.
+     exactly `.env`, open it in any text editor and paste your personal GitHub
+     token after `NODE_AUTH_TOKEN=`. It only lets your own computer download
+     the website's building blocks; it is personal and never committed.
 2. **Start the preview:** open a terminal in the folder (GitHub Desktop:
    Repository → Open in Command Prompt) and run:
 
@@ -137,14 +118,17 @@ For real design work, use the live preview:
 ## Developer notes
 
 - `src/dataset.config.js` is the website's whole declaration: dataset package,
-  entities with list/detail routes, page shell + navigation, extra views.
-  `src/main.js` should not need edits.
+  entities with generated list/detail routes, page shell + navigation, and
+  `extraViews` for the site's own pages. `src/main.js` should not need edits.
+- Site-specific pages live in `src/views/` and are declared as `extraViews`.
+  A route named `home` replaces the engine's generic home page.
 - Tests: `npm run test` runs `tests/smoke.test.js`, which mounts the app
   against the real data package. Add website-specific tests next to it.
-- Extra pages go into `src/views/` and are declared as `extraViews` in
-  `dataset.config.js`.
 - CI (`.github/workflows/`) is a set of thin callers of
   [`metanull/viewer-workflows`](https://github.com/metanull/viewer-workflows);
   build + test block, ESLint + `npm audit` report, locale PRs validate and
   auto-merge, Dependabot minor/patch bumps of the platform packages
-  auto-merge, a weekly audit opens issues on findings.
+  auto-merge, a weekly audit opens issues on findings. No workflow takes a
+  secret.
+- The deployed base path comes from `BASE_PATH` at build time; the deploy
+  workflow sets it to `/baroqueart/` for GitHub Pages.

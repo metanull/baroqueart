@@ -1,6 +1,7 @@
-# Placeholder team names — replace with the real teams or usernames of this
-# website (personal accounts have no teams; list usernames instead).
-/locales/ @metanull/translators
-/theme/ @metanull/webdesigners
-/src/ @metanull/developers
-/.github/ @metanull/admins
+# The metanull account owns every area for now. Replace an entry as soon as a
+# role has someone dedicated to it (personal accounts have no teams, so list
+# usernames rather than @org/team names).
+/locales/ @metanull
+/theme/ @metanull
+/src/ @metanull
+/.github/ @metanull

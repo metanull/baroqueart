@@ -6,10 +6,10 @@ const { entityNames } = useDataPackage()
 export default {
   // The dataset package this website renders. Must match the alias in
   // vite.config.js and the dependency in package.json.
-  datasetPackage: '@metanull/__DATASET__-data',
+  datasetPackage: '@metanull/baroqueart-data',
 
   // Shown as the home page heading.
-  siteName: '__DATASET__',
+  siteName: 'Baroque Art',
 
   features: {
     // Entities that get a list page (/#/<entity>) and detail pages
@@ -25,12 +25,12 @@ export default {
   navigation: {
     // Props for PageShell — see @metanull/viewer-layout for the full list
     // (headerSubtitle, bannerImage, hyperlinks, sponsors, …).
-    headerTitle: '__DATASET__',
+    headerTitle: 'Discover Baroque Art',
     navLinks: [
       { label: 'Home', href: '#/' },
       ...entityNames.map((entity) => ({ label: entity, href: `#/${entity}` })),
     ],
-    footerText: '',
+    footerText: '© Museum With No Frontiers (MWNF) 2004 – 2026',
   },
 
   // Website-specific extra pages (components under src/views/):
