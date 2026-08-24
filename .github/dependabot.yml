@@ -1,0 +1,12 @@
+# Daily checks; @metanull platform packages propagate immediately, everything
+# else waits out a 7-day cooldown (effectively weekly).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: daily
+    cooldown:
+      default-days: 7
+      exclude:
+        - "@metanull/*"

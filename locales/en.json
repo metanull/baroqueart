@@ -1,0 +1,15 @@
+{
+  "chrome.home": "Home",
+  "chrome.backToList": "Back to the list",
+  "chrome.empty": "Nothing to display yet.",
+  "chrome.loading": "Loading…",
+  "chrome.notFound": "This record does not exist.",
+  "chrome.previous": "Previous",
+  "chrome.next": "Next",
+  "chrome.page": "Page {page} of {total}",
+  "layout.skipToContent": "Skip to content",
+  "layout.navigationLabel": "Main navigation",
+  "layout.languageLabel": "Language",
+  "layout.hyperlinksLabel": "Related links",
+  "layout.sponsorsLabel": "Sponsors"
+}

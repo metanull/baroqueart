@@ -1,0 +1,14 @@
+name: Scheduled audit
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+  packages: read
+jobs:
+  audit:
+    # Nothing to audit from the template itself - see ci.yml.
+    if: github.repository != 'metanull/website-template'
+    uses: metanull/viewer-workflows/.github/workflows/audit-scheduled.yml@v1

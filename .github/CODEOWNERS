@@ -1,0 +1,6 @@
+# Placeholder team names — replace with the real teams or usernames of this
+# website (personal accounts have no teams; list usernames instead).
+/locales/ @metanull/translators
+/theme/ @metanull/webdesigners
+/src/ @metanull/developers
+/.github/ @metanull/admins
