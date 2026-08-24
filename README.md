@@ -41,7 +41,8 @@ and it differs from the Islamic Art dataset in ways that shape the site:
 
 The site currently renders the generic entity pages that `viewer-core`
 generates by default. Replacing them with the real Baroque Art pages is
-tracked by the epic and its stories in this repository's issues.
+tracked by [epic #20](https://github.com/metanull/baroqueart/issues/20) and
+its thirteen stories.
 
 ---
 
