@@ -1,6 +1,8 @@
 /*
- * The website's visual identity. Every value below is a neutral starting
- * point — change them freely; this file belongs to the webdesigner.
+ * Baroque Art — visual identity.
+ *
+ * Navy/blue palette carried over from the legacy MWNF "Discover Baroque
+ * Art" site (discoverbaroqueart.org). This file belongs to the webdesigner.
  *
  * Full token documentation with explanations:
  * node_modules/@metanull/viewer-layout/src/tokens.reference.css
@@ -8,29 +10,29 @@
 
 :root {
   /* ---------- Global ---------- */
-  --mwnf-font-body: system-ui, sans-serif;
-  --mwnf-font-heading: inherit;
+  --mwnf-font-body: 'Roboto', sans-serif;
+  --mwnf-font-heading: 'Roboto', sans-serif;
   --mwnf-line-height: 1.6;
-  --mwnf-weight-heading: 700;
-  --mwnf-color-text: #1c1c1c;
+  --mwnf-weight-heading: 400;
+  --mwnf-color-text: #222222;
   --mwnf-color-background: #ffffff;
-  --mwnf-color-accent: #1c1c1c;
-  --mwnf-color-muted: #555555;
-  --mwnf-color-border: #dddddd;
-  --mwnf-content-width: 64rem;
+  --mwnf-color-accent: #12376b;
+  --mwnf-color-muted: #5a5a5a;
+  --mwnf-color-border: #8fa3ba;
+  --mwnf-content-width: 60rem; /* legacy 960px container */
   --mwnf-content-padding: 1rem;
   --mwnf-space: 0.75rem;
-  --mwnf-radius: 0.25rem;
-  --mwnf-section-border: 1px solid #dddddd;
+  --mwnf-radius: 0; /* legacy design has square corners */
+  --mwnf-section-border: 1px solid #d4dde7;
   --mwnf-section-title-size: 1rem;
 
   /* ---------- Header ---------- */
-  --mwnf-header-padding: 1.25rem;
-  --mwnf-header-background: transparent;
-  --mwnf-header-text: inherit;
+  --mwnf-header-padding: 0.75rem;
+  --mwnf-header-background: #14214e;
+  --mwnf-header-text: #ffffff;
   --mwnf-header-title-size: 1.75rem;
-  --mwnf-header-subtitle-size: 1rem;
-  --mwnf-header-subtitle-color: #555555;
+  --mwnf-header-subtitle-size: 0.7rem;
+  --mwnf-header-subtitle-color: #ffffff;
 
   /* ---------- Banner ---------- */
   --mwnf-banner-padding: 0;
@@ -40,22 +42,22 @@
   --mwnf-banner-max-height: 20rem;
 
   /* ---------- Navigation ---------- */
-  --mwnf-nav-padding: 0.5rem;
-  --mwnf-nav-background: transparent;
-  --mwnf-nav-border: 1px solid #dddddd;
-  --mwnf-nav-gap: 1rem;
-  --mwnf-nav-link-color: #1c1c1c;
-  --mwnf-nav-link-active-color: inherit;
+  --mwnf-nav-padding: 0;
+  --mwnf-nav-background: #12376b;
+  --mwnf-nav-border: 1px solid #3f6289;
+  --mwnf-nav-gap: 0px; /* gapless bar of solid link blocks */
+  --mwnf-nav-link-color: #ffffff;
+  --mwnf-nav-link-active-color: #f5da66;
   --mwnf-nav-link-weight: 500;
 
   /* ---------- Content ---------- */
-  --mwnf-content-padding-block: 1.5rem;
+  --mwnf-content-padding-block: 1.25rem;
   --mwnf-content-background: transparent;
 
   /* ---------- Hyperlinks ---------- */
   --mwnf-hyperlinks-padding: 1rem;
   --mwnf-hyperlinks-background: transparent;
-  --mwnf-hyperlinks-link-color: #1c1c1c;
+  --mwnf-hyperlinks-link-color: #12376b;
 
   /* ---------- Sponsors ---------- */
   --mwnf-sponsors-padding: 1rem;
@@ -64,14 +66,16 @@
   --mwnf-sponsors-logo-height: 2.5rem;
 
   /* ---------- Footer ---------- */
-  --mwnf-footer-padding: 1.25rem;
-  --mwnf-footer-background: transparent;
-  --mwnf-footer-text-color: #555555;
-  --mwnf-footer-text-size: 0.875rem;
+  --mwnf-footer-padding: 0.625rem;
+  --mwnf-footer-background: #14214e;
+  --mwnf-footer-text-color: #ffffff;
+  --mwnf-footer-text-size: 0.75rem;
 
   /* ---------- Shared views (@metanull/viewer-core) ----------
-   * The page shell already centers and pads the content section, so the
-   * views inside it fill it edge to edge and inherit the fonts above. */
+   * Only the generic entity pages read these; the block goes away when the
+   * page stories replace them (features.entities: []). The page shell
+   * already centers and pads the content section, so the views inside it
+   * fill it edge to edge and inherit the fonts above. */
   --vc-font-body: var(--mwnf-font-body);
   --vc-line-height: var(--mwnf-line-height);
   --vc-color-background: transparent;

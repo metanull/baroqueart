@@ -20,6 +20,14 @@ export default defineConfig({
     // viewer-layout must not be pre-bundled either or its chunk gets a second
     // copy of the Vue runtime in dev (both packages share the app's vue).
     exclude: ['@metanull/viewer-core', '@metanull/viewer-layout'],
+    // The runtime deps reach the browser through those excluded packages, so
+    // the dev-server dependency scan cannot discover them from the app's own
+    // imports alone. Without this list a late discovery pre-bundles a second
+    // copy of Vue next to the raw one already loaded, and the app crashes on
+    // boot ("Cannot read properties of null" in runtime-core). Listing them
+    // pre-bundles each exactly once, and the excluded packages get the same
+    // copy.
+    include: ['vue', 'vue-i18n', 'vue-router', 'marked'],
   },
   test: {
     environment: 'jsdom',
