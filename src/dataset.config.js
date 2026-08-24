@@ -1,6 +1,6 @@
 import { useDataPackage } from '@metanull/viewer-core'
-import { PageShell } from '@metanull/viewer-layout'
 import languagesData from '@inventory-data/languages.json'
+import SiteShell from './SiteShell.vue'
 
 const { entityNames } = useDataPackage()
 
@@ -55,13 +55,12 @@ export default {
   // initial locale.
   languages,
 
-  // The page structure rendered around the active view. Remove these two
-  // keys for a bare, shell-less site.
-  shell: PageShell,
+  // SiteShell wraps @metanull/viewer-layout's PageShell with the MWNF
+  // header lockup; everything in `navigation` reaches PageShell untouched.
+  shell: SiteShell,
   navigation: {
     // Props for PageShell — see @metanull/viewer-layout for the full list
     // (headerSubtitle, bannerImage, hyperlinks, sponsors, …).
-    headerTitle: 'Discover Baroque Art',
     navLinks: [
       { label: 'Home', href: '#/' },
       ...entityNames.map((entity) => ({ label: entity, href: `#/${entity}` })),

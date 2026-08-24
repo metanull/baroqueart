@@ -2,6 +2,7 @@ import { createViewer } from '@metanull/viewer-core'
 import '@metanull/viewer-layout/style.css'
 import '../theme/tokens.css'
 import '../theme/overrides.css'
+import './styles/site.css'
 import config from './dataset.config.js'
 
 // Every locales/<lang>.json becomes the messages of that language.
