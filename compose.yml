@@ -3,10 +3,17 @@ services:
     build: .
     ports:
       - "5173:5173"
-    env_file: .env
     volumes:
       - .:/app
       - node_modules:/app/node_modules
+      # Your own npm credentials, read-only. The repository never carries a
+      # token: `.npmrc` here maps the @metanull scope to GitHub Packages and
+      # stops there, and the container reads your personal login the same way
+      # your host does.
+      #
+      # Log in once on the host with:
+      #   npm login --registry=https://npm.pkg.github.com --scope=@metanull
+      - ${HOME}/.npmrc:/root/.npmrc:ro
 
 volumes:
   node_modules:

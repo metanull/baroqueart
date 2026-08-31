@@ -11,6 +11,6 @@ jobs:
     # not resolve, so npm ci cannot succeed here. Websites created from the
     # template have a different repository name and do run these checks.
     if: github.repository != 'metanull/website-template'
-    uses: metanull/viewer-workflows/.github/workflows/website-ci.yml@v1.3.0
+    uses: metanull/viewer-workflows/.github/workflows/website-ci.yml@v1.4.0
   locales:
-    uses: metanull/viewer-workflows/.github/workflows/locale-validate.yml@v1.3.0
+    uses: metanull/viewer-workflows/.github/workflows/locale-validate.yml@v1.4.0
