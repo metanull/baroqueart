@@ -10,9 +10,9 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@metanull/baroqueart-data": "*",
-    "@metanull/viewer-core": "^0.2.0",
-    "@metanull/viewer-layout": "^0.1.0",
+    "@metanull/baroqueart-data": "^2.0.1",
+    "@metanull/viewer-core": "^1.0.0",
+    "@metanull/viewer-layout": "^1.0.0",
     "marked": "^18.0.11",
     "vue": "^3.5.0",
     "vue-i18n": "^11.0.0",
