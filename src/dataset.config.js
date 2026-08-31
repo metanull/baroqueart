@@ -1,8 +1,5 @@
-import { useDataPackage } from '@metanull/viewer-core'
 import languagesData from '@inventory-data/languages.json'
 import SiteShell from './SiteShell.vue'
-
-const { entityNames } = useDataPackage()
 
 // Content languages — the "items-driven" rule (#7): the site offers exactly
 // the languages the item records are translated into, derived from the
@@ -43,12 +40,13 @@ export default {
   // Shown as the home page heading.
   siteName: 'Baroque Art',
 
+  // Every page is a website-specific view (below) reimplementing the legacy
+  // site's own pages. The generic entity list/detail pages viewer-core can
+  // auto-generate are switched off: they publish the data package's shape
+  // rather than the site's, and the two disagree — an exhibition is a
+  // Collection here, and the legacy site never had a "collections" index.
   features: {
-    // Entities that get a list page (/#/<entity>) and detail pages
-    // (/#/<entity>/<id>). Defaults to every entity of the data package;
-    // replace with an explicit list to publish only some of them:
-    // entities: ['item', 'exhibition'],
-    entities: entityNames,
+    entities: [],
   },
 
   // vue-i18n locale doubles as the content language; 'en' first so it is the
@@ -61,14 +59,45 @@ export default {
   navigation: {
     // Props for PageShell — see @metanull/viewer-layout for the full list
     // (headerSubtitle, bannerImage, hyperlinks, sponsors, …).
+    // The legacy site's own top-level sections, in its own order.
     navLinks: [
       { label: 'Home', href: '#/' },
-      ...entityNames.map((entity) => ({ label: entity, href: `#/${entity}` })),
+      { label: 'Permanent Collection', href: '#/permanent-collection' },
+      { label: 'Database', href: '#/database' },
+      { label: 'Timeline', href: '#/timeline' },
+      { label: 'Partners', href: '#/partners' },
+      { label: 'Exhibitions', href: '#/exhibitions' },
     ],
     languages: languages.map((code) => ({ code, label: languageLabel(code) })),
     footerText: '© Museum With No Frontiers (MWNF) 2004 – 2026',
   },
 
-  // Website-specific extra pages (components under src/views/):
-  // extraViews: [{ path: '/about', name: 'about', component: AboutView }],
+  // The full legacy route map, one view per page. The 'home' name replaces
+  // viewer-core's generic home route. Entrance/results are separate paths
+  // rather than one page with a toggle, because legacy links into the results
+  // form directly (a search is a shareable URL) and the entrance page carries
+  // its own editorial introduction.
+  extraViews: [
+    { path: '/', name: 'home', component: () => import('./views/Home.vue') },
+    { path: '/permanent-collection', component: () => import('./views/PcEntrance.vue') },
+    { path: '/permanent-collection/results', component: () => import('./views/PcList.vue') },
+    { path: '/database', component: () => import('./views/Database.vue') },
+    { path: '/database/results', component: () => import('./views/DatabaseResults.vue') },
+    { path: '/timeline', component: () => import('./views/TimelineEntrance.vue') },
+    { path: '/timeline/results', component: () => import('./views/TimelineResults.vue') },
+    { path: '/partners', component: () => import('./views/PartnersEntrance.vue') },
+    { path: '/partners/results', component: () => import('./views/PartnersResults.vue') },
+    { path: '/partner/:id', component: () => import('./views/PartnerDetail.vue') },
+    { path: '/exhibitions', component: () => import('./views/ExhibitionsEntrance.vue') },
+    { path: '/exhibitions/:exhibitionId', component: () => import('./views/ExhibitionSplash.vue') },
+    {
+      path: '/exhibitions/:exhibitionId/introduction',
+      component: () => import('./views/ExhibitionIntroduction.vue'),
+    },
+    {
+      path: '/exhibitions/:exhibitionId/theme/:themeId',
+      component: () => import('./views/ExhibitionTheme.vue'),
+    },
+    { path: '/item/:id', component: () => import('./views/ItemDetail.vue') },
+  ],
 }
