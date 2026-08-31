@@ -6,4 +6,4 @@ permissions:
   pull-requests: write
 jobs:
   automerge:
-    uses: metanull/viewer-workflows/.github/workflows/dependabot-automerge.yml@v1
+    uses: metanull/viewer-workflows/.github/workflows/dependabot-automerge.yml@v1.3.0

@@ -10,3 +10,21 @@ updates:
       default-days: 7
       exclude:
         - "@metanull/*"
+
+  # The reusable workflows in metanull/viewer-workflows are pinned to an exact
+  # version in .github/workflows/*.yml, never to a moving major tag. Dependabot
+  # covers reusable-workflow refs as well as step-level actions, so a new
+  # viewer-workflows release arrives here as a pull request that runs this
+  # site's own CI before it is adopted — instead of a force-moved `v1`
+  # deploying untested CI to every repo at once. Green minor/patch bumps
+  # auto-merge via automerge.yml; majors wait for a human.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+    groups:
+      github-actions:
+        patterns:
+          - "*"
