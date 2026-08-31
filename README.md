@@ -18,7 +18,7 @@ access to GitHub Packages. In CI there is nothing to configure: the package
 grants this repository Read under *Manage Actions access*, so the workflow's
 built-in `github.token` can install it — no secret, no PAT. Locally, each
 developer authenticates for themselves, with `npm login --registry=https://npm.pkg.github.com`
-or a personal `~/.npmrc`; the Docker preview reads the token from `.env`.
+or a personal `~/.npmrc`; the Docker preview mounts that `~/.npmrc` read-only.
 
 ## Dataset specifics
 
@@ -87,10 +87,10 @@ For real design work, use the live preview:
    - Install **Docker Desktop** (docker.com) and **GitHub Desktop**
      (desktop.github.com), each with default settings.
    - In GitHub Desktop: File → Clone repository → pick this repository.
-   - In the cloned folder, copy the file `.env.example` to a new file named
-     exactly `.env`, open it in any text editor and paste your personal GitHub
-     token after `NODE_AUTH_TOKEN=`. It only lets your own computer download
-     the website's building blocks; it is personal and never committed.
+   - Sign in to GitHub Packages once, in a terminal:
+     `npm login --registry=https://npm.pkg.github.com --scope=@metanull`.
+     That login stays on your own computer, and the preview reads it. Nothing
+     in this repository holds a token.
 2. **Start the preview:** open a terminal in the folder (GitHub Desktop:
    Repository → Open in Command Prompt) and run:
 

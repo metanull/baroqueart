@@ -11,4 +11,4 @@ jobs:
   deploy:
     # Nothing to deploy from the template itself - see ci.yml.
     if: github.repository != 'metanull/website-template'
-    uses: metanull/viewer-workflows/.github/workflows/website-deploy-pages.yml@v1.3.0
+    uses: metanull/viewer-workflows/.github/workflows/website-deploy-pages.yml@v1.4.0
