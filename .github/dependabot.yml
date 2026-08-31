@@ -1,15 +1,33 @@
-# Daily checks; @metanull platform packages propagate immediately, everything
-# else waits out a 7-day cooldown (effectively weekly).
+# Daily checks on third-party dependencies, each waiting out a 7-day cooldown
+# so a release has time to be withdrawn before it reaches a site.
 version: 2
 updates:
+  # The @metanull platform packages are IGNORED here, and that is not a
+  # preference — Dependabot cannot read them at all.
+  #
+  # GitHub Packages requires a token for every npm install, including of a
+  # PUBLIC package (viewer-core and viewer-layout are public and still fail).
+  # CI works because the run's own `github.token` carries the package's
+  # "Manage Actions access" grant; Dependabot runs outside that grant and
+  # inherits neither it nor the committed .npmrc, so it reports
+  # `private_source_authentication_failure` for every @metanull dependency.
+  #
+  # One unresolvable dependency aborts the WHOLE npm job. Leaving them listed
+  # therefore blocked every THIRD-PARTY update too — the estate went a week
+  # with no npm pull request on any site, and five sites had never had one.
+  # Ignoring them is what lets vue, vite, eslint and the rest flow again.
+  #
+  # Nothing is lost by it: no @metanull bump has ever been delivered here.
+  # They are updated by hand (`npm update @metanull/...`) until the scheduled
+  # platform-update workflow lands.
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: daily
     cooldown:
       default-days: 7
-      exclude:
-        - "@metanull/*"
+    ignore:
+      - dependency-name: "@metanull/*"
 
   # The reusable workflows in metanull/viewer-workflows are pinned to an exact
   # version in .github/workflows/*.yml, never to a moving major tag. Dependabot
@@ -18,6 +36,9 @@ updates:
   # site's own CI before it is adopted — instead of a force-moved `v1`
   # deploying untested CI to every repo at once. Green minor/patch bumps
   # auto-merge via automerge.yml; majors wait for a human.
+  #
+  # This ecosystem is unaffected by the problem above: it resolves against the
+  # GitHub API, not against npm.pkg.github.com.
   - package-ecosystem: github-actions
     directory: /
     schedule:
