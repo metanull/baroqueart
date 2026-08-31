@@ -11,4 +11,4 @@ jobs:
   audit:
     # Nothing to audit from the template itself - see ci.yml.
     if: github.repository != 'metanull/website-template'
-    uses: metanull/viewer-workflows/.github/workflows/audit-scheduled.yml@v1
+    uses: metanull/viewer-workflows/.github/workflows/audit-scheduled.yml@v1.3.0
