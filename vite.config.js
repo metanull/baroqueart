@@ -31,6 +31,13 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // The smoke test mounts the app, which lazily loads the home view and
+    // through it the whole data package. On a cold cache that is Vite's first
+    // transform of the entire view graph plus several megabytes of JSON, and
+    // it does not fit in vitest's 5 s default — measured here as a pass at
+    // ~1.7 s warm and a timeout on the run that had to transform first. The
+    // budget is for the machine, not the assertion.
+    testTimeout: 60000,
     server: {
       deps: {
         // viewer-core ships .vue source; Node cannot load it unless Vitest
