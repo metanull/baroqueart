@@ -1,12 +1,12 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
+import { useI18n } from '@metanull/viewer-core'
 import { useInventoryData } from '../composables/useInventoryData.js'
 
 const route = useRoute()
 const router = useRouter()
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 const {
   partners, items,
   availableLangs, defaultLang,
@@ -35,12 +35,15 @@ async function loadPartnerLangTranslations(lang) {
 
 watch(activeLang, lang => loadPartnerLangTranslations(lang), { immediate: true })
 
+// The partner's own curatorial text, in the active content language. Kept
+// clear of `t`, which is this website's interface texts.
+//
 // Falls back to the English record when the active language has none: the
 // offered languages come from the item translations, and the package's
 // per-entity coverage does not line up with them — several of the languages a
 // visitor can pick ship no partners file at all, which would leave the whole
 // partner sheet empty.
-const t = computed(() =>
+const tr = computed(() =>
   partnerTranslationsCache.value[activeLang.value]?.[partner.value?.id]
     ?? enPartnerTranslations.value[partner.value?.id]
     ?? {}
@@ -53,7 +56,11 @@ const relatedItems = computed(() => {
   return items.value.filter(i => i.partner_id === partner.value.id)
 })
 
-const viewItemsLabel = computed(() => (partner.value?.type === 'institution' ? 'View Monuments' : 'View Objects'))
+const viewItemsLabel = computed(() =>
+  partner.value?.type === 'institution'
+    ? t('baroqueart.action.viewMonuments')
+    : t('baroqueart.action.viewObjects')
+)
 
 function viewItemsLink() {
   return { path: '/permanent-collection/results', query: { partner: partner.value.id } }
@@ -62,7 +69,7 @@ function viewItemsLink() {
 // ── Contact ────────────────────────────────────────────────────────────
 
 const hasContactInfo = computed(() =>
-  !!(t.value.address || t.value.phone || t.value.email || t.value.website || partner.value?.additional_urls?.length)
+  !!(tr.value.address || tr.value.phone || tr.value.email || tr.value.website || partner.value?.additional_urls?.length)
 )
 
 function normalizeUrl(url) {
@@ -105,27 +112,27 @@ function back() {
 
 <template>
   <div v-if="!partner" class="content-box not-found">
-    <p>Partner not found.</p>
-    <router-link to="/partners">← Return to Partners</router-link>
+    <p>{{ $t('baroqueart.notFound.partner') }}</p>
+    <router-link to="/partners">← {{ $t('baroqueart.partner.returnLink') }}</router-link>
   </div>
 
   <div v-else class="detail-wrap">
-    <a class="back-link" href="#" @click.prevent="back">← Back to Partners</a>
+    <a class="back-link" href="#" @click.prevent="back">← {{ $t('baroqueart.partner.backLink') }}</a>
 
     <div class="detail content-box">
       <div class="detail-type-badge">{{ partner.type }}</div>
 
-      <h1 class="detail-title" v-html="mdInline(t.name ?? partner.id)" />
-      <h2 v-if="t.city || partner.country_id" class="detail-subtitle">
-        <template v-if="t.city">{{ t.city }}<template v-if="partner.country_id">, </template></template>
+      <h1 class="detail-title" v-html="mdInline(tr.name ?? partner.id)" />
+      <h2 v-if="tr.city || partner.country_id" class="detail-subtitle">
+        <template v-if="tr.city">{{ tr.city }}<template v-if="partner.country_id">, </template></template>
         <template v-if="partner.country_id">{{ countryLabel(partner.country_id) }}</template>
       </h2>
 
       <!-- View objects / monuments -->
       <div v-if="relatedItems.length" class="view-items-row">
         <RouterLink :to="viewItemsLink()" class="btn">{{ viewItemsLabel }} ({{ relatedItems.length }}) →</RouterLink>
-        <a v-if="t.website" :href="normalizeUrl(t.website)" target="_blank" rel="noopener" class="homepage-link">
-          Visit Website ↗
+        <a v-if="tr.website" :href="normalizeUrl(tr.website)" target="_blank" rel="noopener" class="homepage-link">
+          {{ $t('baroqueart.action.visitWebsite') }} ↗
         </a>
       </div>
 
@@ -141,21 +148,21 @@ function back() {
       </div>
 
       <!-- About -->
-      <section v-if="t.description" class="content-section">
-        <h2 class="content-section-heading">About</h2>
-        <div v-html="md(t.description)" class="prose" />
+      <section v-if="tr.description" class="content-section">
+        <h2 class="content-section-heading">{{ $t('baroqueart.partner.about') }}</h2>
+        <div v-html="md(tr.description)" class="prose" />
       </section>
 
       <!-- Contact -->
       <section v-if="hasContactInfo || contactPersons.length" class="content-section">
-        <h2 class="content-section-heading">Contact</h2>
+        <h2 class="content-section-heading">{{ $t('baroqueart.partner.contact') }}</h2>
 
         <div v-if="hasContactInfo" class="contact-block">
-          <p v-if="t.address" class="contact-address">{{ t.address }}</p>
-          <p v-if="t.phone">Phone: {{ t.phone }}</p>
-          <p v-if="t.email"><a :href="`mailto:${t.email}`">{{ t.email }}</a></p>
-          <p v-if="t.website">
-            <a :href="normalizeUrl(t.website)" target="_blank" rel="noopener">{{ t.website }}</a>
+          <p v-if="tr.address" class="contact-address">{{ tr.address }}</p>
+          <p v-if="tr.phone">{{ $t('baroqueart.partner.phone') }}: {{ tr.phone }}</p>
+          <p v-if="tr.email"><a :href="`mailto:${tr.email}`">{{ tr.email }}</a></p>
+          <p v-if="tr.website">
+            <a :href="normalizeUrl(tr.website)" target="_blank" rel="noopener">{{ tr.website }}</a>
             <template v-for="(u, i) in partner.additional_urls" :key="i">
               &nbsp;|&nbsp;<a :href="normalizeUrl(u.url)" target="_blank" rel="noopener">{{ u.title ?? u.url }}</a>
             </template>
@@ -165,15 +172,15 @@ function back() {
         <div v-for="(cp, i) in contactPersons" :key="i" class="contact-block contact-person">
           <p v-if="cp.title" class="contact-person-title">{{ cp.title }}</p>
           <p v-if="cp.name">{{ cp.name }}</p>
-          <p v-if="cp.phone">Phone: {{ cp.phone }}</p>
-          <p v-if="cp.fax">Fax: {{ cp.fax }}</p>
+          <p v-if="cp.phone">{{ $t('baroqueart.partner.phone') }}: {{ cp.phone }}</p>
+          <p v-if="cp.fax">{{ $t('baroqueart.partner.fax') }}: {{ cp.fax }}</p>
           <p v-if="cp.email"><a :href="`mailto:${cp.email}`">{{ cp.email }}</a></p>
         </div>
       </section>
 
       <!-- Logos -->
       <section v-if="partner.logos?.length" class="content-section">
-        <h2 class="content-section-heading">Logo</h2>
+        <h2 class="content-section-heading">{{ $t('baroqueart.partner.logo') }}</h2>
         <div class="logos">
           <img v-for="(logo, i) in partner.logos" :key="i" :src="logo.url" :alt="logo.alt_text ?? ''" class="logo-img" />
         </div>
@@ -181,8 +188,8 @@ function back() {
 
       <!-- Map -->
       <section v-if="mapEmbedUrl" class="content-section">
-        <h2 class="content-section-heading">Map</h2>
-        <iframe class="map-frame" :src="mapEmbedUrl" loading="lazy" title="Partner location map" />
+        <h2 class="content-section-heading">{{ $t('baroqueart.partner.map') }}</h2>
+        <iframe class="map-frame" :src="mapEmbedUrl" loading="lazy" :title="$t('baroqueart.partner.mapTitle')" />
       </section>
     </div>
   </div>

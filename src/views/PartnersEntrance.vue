@@ -1,5 +1,6 @@
 <script setup>
 import { useRouter } from 'vue-router'
+import { I18nText } from '@metanull/viewer-core'
 
 const router = useRouter()
 
@@ -10,28 +11,23 @@ function browse(type) {
 
 <template>
   <div>
-    <h1 class="section-heading">Partners</h1>
+    <h1 class="section-heading">{{ $t('baroqueart.nav.partners') }}</h1>
 
     <div class="content-box">
-      <p class="intro-text">
-        Discover Baroque Art is a collaborative project bringing together museums and
-        institutions from across Europe and beyond. Browse the partner
-        museums that lend and hold the objects in the collection, or the partner
-        institutions responsible for the monuments and historic sites.
-      </p>
+      <I18nText tag="p" class="intro-text" keypath="baroqueart.partner.introDiscover" />
 
       <table class="form-table filter-table">
         <tbody>
           <tr>
-            <th><label>Partner Museums</label></th>
+            <th><label>{{ $t('baroqueart.partner.museums') }}</label></th>
             <td>
-              <button class="btn" @click="browse('museum')">Browse Museums →</button>
+              <button class="btn" @click="browse('museum')">{{ $t('baroqueart.action.browseMuseums') }} →</button>
             </td>
           </tr>
           <tr>
-            <th><label>Other Partners</label></th>
+            <th><label>{{ $t('baroqueart.partner.others') }}</label></th>
             <td>
-              <button class="btn" @click="browse('institution')">Browse Institutions →</button>
+              <button class="btn" @click="browse('institution')">{{ $t('baroqueart.action.browseInstitutions') }} →</button>
             </td>
           </tr>
         </tbody>

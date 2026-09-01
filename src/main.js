@@ -1,16 +1,18 @@
-import { createViewer } from '@metanull/viewer-core'
+import { createViewer, mergeMessages } from '@metanull/viewer-core'
+import { catalogues as sharedTexts } from '@metanull/viewer-i18n/standalone'
 import '@metanull/viewer-layout/style.css'
 import '../theme/tokens.css'
 import '../theme/overrides.css'
 import './styles/site.css'
 import config from './dataset.config.js'
 
-// Every locales/<lang>.json becomes the messages of that language.
+// Every locales/<lang>.json holds this website's own texts, and may overload
+// any entry it receives. Local wins — that is the only merge rule there is.
 const localeFiles = import.meta.glob('../locales/*.json', { eager: true })
-const messages = {}
+const ownTexts = {}
 for (const [path, module] of Object.entries(localeFiles)) {
   const lang = path.split('/').pop().replace(/\.json$/, '')
-  messages[lang] = module.default
+  ownTexts[lang] = module.default
 }
 
-createViewer({ ...config, messages }).mount('#app')
+createViewer({ ...config, messages: mergeMessages(sharedTexts, ownTexts) }).mount('#app')

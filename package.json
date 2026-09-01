@@ -9,13 +9,17 @@
     "test": "vitest run",
     "lint": "eslint ."
   },
+  "viewerI18n": {
+    "class": "standalone",
+    "namespace": "baroqueart"
+  },
   "dependencies": {
     "@metanull/baroqueart-data": "^2.0.1",
-    "@metanull/viewer-core": "^1.0.0",
-    "@metanull/viewer-layout": "^1.0.0",
+    "@metanull/viewer-core": "^1.2.1",
+    "@metanull/viewer-i18n": "^1.2.0",
+    "@metanull/viewer-layout": "^2.0.0",
     "marked": "^18.0.11",
     "vue": "^3.5.0",
-    "vue-i18n": "^11.0.0",
     "vue-router": "^5.0.0"
   },
   "devDependencies": {

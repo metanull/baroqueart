@@ -11,19 +11,23 @@ import SiteShell from './SiteShell.vue'
 // Never derive this from manifest.languages: it declares 18 languages, most
 // without any translation file at all. Entities not covered in the active
 // language fall back per entity to English, then internal_name.
-// The interface chrome (labels, navigation) is English-only by decision —
-// locales/ carries only en.json and vue-i18n falls back to it.
-// English first, the rest sorted.
+//
+// The interface chrome is translated where the dictionary has the language and
+// falls back to English where it does not — one language for both, held by
+// viewer-core.
+//
+// Plain alphabetical. The list used to be forced to start with English because
+// the website opened at `languages[0]`; viewer-core negotiates the opening
+// language now (an explicit `?lang=`, then the visitor's remembered choice,
+// then their browser, then English), so the order here is only the order of
+// the switcher.
 const itemTranslationFiles = import.meta.glob('@inventory-data/translations/items.*.json')
 const itemLangs = new Set(
   Object.keys(itemTranslationFiles)
     .map((path) => path.match(/items\.([a-z]{2})\.json$/)?.[1])
     .filter(Boolean),
 )
-const languages = [
-  ...(itemLangs.has('en') ? ['en'] : []),
-  ...[...itemLangs].filter((l) => l !== 'en').sort(),
-]
+const languages = [...itemLangs].sort()
 
 // Native display name for the language switcher, from the data package's
 // language table (falls back to the English name, then the raw code).
@@ -49,27 +53,19 @@ export default {
     entities: [],
   },
 
-  // vue-i18n locale doubles as the content language; 'en' first so it is the
-  // initial locale.
+  // The site language, which doubles as the content language; 'en' first so it
+  // is the initial one.
   languages,
 
   // SiteShell wraps @metanull/viewer-layout's PageShell with the MWNF
   // header lockup; everything in `navigation` reaches PageShell untouched.
   shell: SiteShell,
+
+  // Only what is not a text. The menu labels and the footer line are texts, so
+  // they are built in SiteShell.vue where the catalogue is installed; the
+  // language names below come from the data package, not from a translator.
   navigation: {
-    // Props for PageShell — see @metanull/viewer-layout for the full list
-    // (headerSubtitle, bannerImage, hyperlinks, sponsors, …).
-    // The legacy site's own top-level sections, in its own order.
-    navLinks: [
-      { label: 'Home', href: '#/' },
-      { label: 'Permanent Collection', href: '#/permanent-collection' },
-      { label: 'Database', href: '#/database' },
-      { label: 'Timeline', href: '#/timeline' },
-      { label: 'Partners', href: '#/partners' },
-      { label: 'Exhibitions', href: '#/exhibitions' },
-    ],
     languages: languages.map((code) => ({ code, label: languageLabel(code) })),
-    footerText: '© Museum With No Frontiers (MWNF) 2004 – 2026',
   },
 
   // The full legacy route map, one view per page. The 'home' name replaces

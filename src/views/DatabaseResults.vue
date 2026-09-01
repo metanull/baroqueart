@@ -1,10 +1,12 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from '@metanull/viewer-core'
 import { useInventoryData } from '../composables/useInventoryData.js'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const {
   items,
   itemLabel, countryLabel,
@@ -64,19 +66,22 @@ const refineField   = ref('keyword')
 const refineCond    = ref('AND')
 const showRefine    = ref(false)
 
-const FIELD_OPTIONS = [
-  { value: 'keyword',    label: 'Keyword(s)' },
-  { value: 'name',       label: 'Name' },
-  { value: 'location',   label: 'Location' },
-  { value: 'provenance', label: 'Provenance' },
-  { value: 'patron',     label: 'Patron / Initial Owner' },
-  { value: 'artist',     label: 'Architect / Artist / Master' },
-  { value: 'material',   label: 'Material / Technique' },
-  { value: 'other',      label: 'Other' },
-]
+// The same fields Database.vue offers; `value` is the query parameter and
+// never a text, so only `label` is looked up — each name written out, because
+// the check that every name resolves can only see the ones it can read.
+const FIELD_OPTIONS = computed(() => [
+  { value: 'keyword',    label: t('baroqueart.field.keywords') },
+  { value: 'name',       label: t('baroqueart.field.name') },
+  { value: 'location',   label: t('baroqueart.field.location') },
+  { value: 'provenance', label: t('baroqueart.field.provenance') },
+  { value: 'patron',     label: t('baroqueart.field.patron') },
+  { value: 'artist',     label: t('baroqueart.field.artist') },
+  { value: 'material',   label: t('baroqueart.field.material') },
+  { value: 'other',      label: t('baroqueart.field.other') },
+])
 
 function fieldLabel(val) {
-  return FIELD_OPTIONS.find(f => f.value === val)?.label ?? val
+  return FIELD_OPTIONS.value.find(f => f.value === val)?.label ?? val
 }
 
 function applyRefine() {
@@ -217,59 +222,61 @@ const searchSummary = computed(() => {
   if (s.keyword2) parts.push(`${s.cond2} ${fieldLabel(s.field2)}: "${s.keyword2}"`)
   if (s.keyword3) parts.push(`${s.cond3} ${fieldLabel(s.field3)}: "${s.keyword3}"`)
   if (s.keyword4) parts.push(`${s.cond4} ${fieldLabel(s.field4)}: "${s.keyword4}"`)
-  if (s.dateFrom) parts.push(`from ${s.dateFrom}`)
-  if (s.dateTo)   parts.push(`to ${s.dateTo}`)
-  if (s.lang)     parts.push(`language: ${s.lang.toUpperCase()}`)
+  if (s.dateFrom) parts.push(`${t('baroqueart.filter.from')} ${s.dateFrom}`)
+  if (s.dateTo)   parts.push(`${t('baroqueart.filter.to')} ${s.dateTo}`)
+  if (s.lang)     parts.push(`${t('baroqueart.search.language')}: ${s.lang.toUpperCase()}`)
   return parts
 })
 </script>
 
 <template>
   <div>
-    <h1 class="section-heading">Database Results</h1>
+    <h1 class="section-heading">{{ $t('baroqueart.results.databaseHeading') }}</h1>
 
     <!-- Search summary -->
     <div class="content-box search-summary">
-      <span class="summary-label">Search:</span>
+      <span class="summary-label">{{ $t('baroqueart.results.searchLabel') }}</span>
       <template v-if="searchSummary.length">
         <span v-for="(part, i) in searchSummary" :key="i" class="summary-part">{{ part }}</span>
       </template>
-      <span v-else class="summary-part muted">all items</span>
+      <span v-else class="summary-part muted">{{ $t('baroqueart.results.allItems') }}</span>
 
       <div class="summary-actions">
         <router-link to="/database" class="btn btn-secondary" style="font-size:12px; padding:4px 12px; text-decoration:none">
-          New Search
+          {{ $t('baroqueart.action.newSearch') }}
         </router-link>
         <button
           class="btn"
           style="margin-left:8px; font-size:12px; padding:4px 12px"
           @click="showRefine = !showRefine"
         >
-          Refine
+          {{ $t('baroqueart.action.refine') }}
         </button>
       </div>
     </div>
 
     <!-- Refine panel -->
     <div v-if="showRefine" class="content-box refine-panel">
-      <strong class="filter-label">Add a keyword to refine results:</strong>
+      <strong class="filter-label">{{ $t('baroqueart.results.refineHint') }}</strong>
       <div class="refine-row">
         <select v-model="refineCond" style="width:60px">
-          <option value="AND">AND</option>
-          <option value="OR">OR</option>
+          <option value="AND">{{ $t('baroqueart.search.and') }}</option>
+          <option value="OR">{{ $t('baroqueart.search.or') }}</option>
         </select>
         <select v-model="refineField" style="width:200px; margin-left:8px">
           <option v-for="f in FIELD_OPTIONS" :key="f.value" :value="f.value">{{ f.label }}</option>
         </select>
-        <input type="text" v-model="refineKeyword" placeholder="keyword…" style="width:200px; margin-left:8px" @keyup.enter="applyRefine" />
-        <button class="btn" style="margin-left:10px" @click="applyRefine">Add</button>
+        <input type="text" v-model="refineKeyword" :placeholder="$t('baroqueart.search.keywordPlaceholder')" style="width:200px; margin-left:8px" @keyup.enter="applyRefine" />
+        <button class="btn" style="margin-left:10px" @click="applyRefine">{{ $t('baroqueart.action.add') }}</button>
       </div>
     </div>
 
     <!-- Results -->
     <div class="content-box">
+      <!-- The count is rendered beside its text, never inside it: a text carries
+           no placeholder, and no plural form is chosen for the translator. -->
       <p class="result-count">
-        {{ filteredItems.length }} item{{ filteredItems.length !== 1 ? 's' : '' }} found
+        {{ $t('baroqueart.results.itemsFound') }}: {{ filteredItems.length }}
       </p>
 
       <ul v-if="pagedItems.length" class="item-list">
@@ -295,12 +302,15 @@ const searchSummary = computed(() => {
         </li>
       </ul>
 
-      <p v-else class="no-results">No items match your search. <router-link to="/database">Try a new search.</router-link></p>
+      <p v-else class="no-results">
+        {{ $t('baroqueart.results.noItems') }}
+        <router-link to="/database">{{ $t('baroqueart.action.tryNewSearch') }}</router-link>
+      </p>
 
       <!-- Pagination -->
       <div v-if="totalPages > 1" class="pagination">
-        <span class="pagination-info">Page {{ currentPage }} of {{ totalPages }}</span>
-        <button class="page-btn" :disabled="currentPage === 1" @click="goToPage(currentPage - 1)">‹ Prev</button>
+        <span class="pagination-info">{{ currentPage }} / {{ totalPages }}</span>
+        <button class="page-btn" :disabled="currentPage === 1" @click="goToPage(currentPage - 1)">‹ {{ $t('core.pagination.previous') }}</button>
         <template v-for="p in totalPages" :key="p">
           <button
             v-if="Math.abs(p - currentPage) <= 3 || p === 1 || p === totalPages"
@@ -310,7 +320,7 @@ const searchSummary = computed(() => {
           >{{ p }}</button>
           <span v-else-if="Math.abs(p - currentPage) === 4" class="page-ellipsis">…</span>
         </template>
-        <button class="page-btn" :disabled="currentPage === totalPages" @click="goToPage(currentPage + 1)">Next ›</button>
+        <button class="page-btn" :disabled="currentPage === totalPages" @click="goToPage(currentPage + 1)">{{ $t('core.pagination.next') }} ›</button>
       </div>
     </div>
   </div>

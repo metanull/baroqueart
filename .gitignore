@@ -1,3 +1,8 @@
 node_modules/
 dist/
 .env
+
+# Written by 
+px viewer-i18n-check when it has something to report; the
+# workflow posts it as a pull-request comment and it is never committed.
+locale-problems.md

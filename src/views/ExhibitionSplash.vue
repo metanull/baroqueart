@@ -42,12 +42,12 @@ function back() {
 
 <template>
   <div v-if="!exhibition" class="content-box not-found">
-    <p>Exhibition not found.</p>
-    <router-link to="/exhibitions">← Return to Exhibitions</router-link>
+    <p>{{ $t('baroqueart.notFound.exhibition') }}</p>
+    <router-link to="/exhibitions">← {{ $t('baroqueart.exhibition.returnLink') }}</router-link>
   </div>
 
   <div v-else>
-    <a class="back-link" href="#" @click.prevent="back">← Back to Exhibitions</a>
+    <a class="back-link" href="#" @click.prevent="back">← {{ $t('baroqueart.exhibition.backLink') }}</a>
 
     <h1 class="section-heading" v-html="mdInline(text.title ?? exhibition.internal_name)" />
 
@@ -64,7 +64,7 @@ function back() {
           class="theme-row"
           @click="$router.push(`/exhibitions/${exhibition.id}/introduction`)"
         >
-          <span class="theme-name">Introduction</span>
+          <span class="theme-name">{{ $t('baroqueart.exhibition.introduction') }}</span>
           <span class="theme-arrow">→</span>
         </li>
         <li
@@ -77,7 +77,7 @@ function back() {
           <span class="theme-arrow">→</span>
         </li>
       </ul>
-      <p v-if="!hasIntroduction && !themeList.length" class="no-results">No content available for this exhibition yet.</p>
+      <p v-if="!hasIntroduction && !themeList.length" class="no-results">{{ $t('baroqueart.exhibition.empty') }}</p>
     </div>
   </div>
 </template>

@@ -1,15 +1,39 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from '@metanull/viewer-core'
 import { useInventoryData } from '../composables/useInventoryData.js'
 
 const route = useRoute()
 const { partners, countryLabel, partnerLabel } = useInventoryData()
+const { t } = useI18n()
 
 const filterType = computed(() => (route.query.type === 'institution' ? 'institution' : 'museum'))
 const otherType = computed(() => (filterType.value === 'museum' ? 'institution' : 'museum'))
-const typeLabel = computed(() => (filterType.value === 'museum' ? 'Museums' : 'Institutions'))
-const otherTypeLabel = computed(() => (otherType.value === 'museum' ? 'Partner Museums' : 'Partner Institutions'))
+
+// Both branches spell their name out. A single name built from the type
+// (`islamicart.partner.` + type) would resolve at run time and be invisible to
+// the check that every name a page asks for exists.
+const typeHeading = computed(() =>
+  filterType.value === 'museum'
+    ? t('baroqueart.partner.museums')
+    : t('baroqueart.partner.institutions')
+)
+const associatedLabel = computed(() =>
+  filterType.value === 'museum'
+    ? t('baroqueart.partner.associatedMuseums')
+    : t('baroqueart.partner.associatedInstitutions')
+)
+const noneFoundLabel = computed(() =>
+  filterType.value === 'museum'
+    ? t('baroqueart.partner.noMuseums')
+    : t('baroqueart.partner.noInstitutions')
+)
+const otherTypeLabel = computed(() =>
+  otherType.value === 'museum'
+    ? t('baroqueart.partner.viewMuseums')
+    : t('baroqueart.partner.viewInstitutions')
+)
 
 // Associated tiers are nested under the main "Partners" list per country,
 // mirroring the legacy pm_partner_list.php accordion (level is only present
@@ -33,7 +57,7 @@ const groupedByCountry = computed(() => {
   return [...countries.entries()]
     .map(([countryId, group]) => ({
       countryId,
-      name: countryId ? countryLabel(countryId) : 'Other',
+      name: countryId ? countryLabel(countryId) : t('baroqueart.results.otherCountry'),
       main: group.main.sort((a, b) => partnerLabel(a.id).localeCompare(partnerLabel(b.id))),
       associated: group.associated.sort((a, b) => partnerLabel(a.id).localeCompare(partnerLabel(b.id))),
     }))
@@ -51,18 +75,18 @@ function partnerLink(partner) {
 
 <template>
   <div>
-    <RouterLink to="/partners" class="back-link">‹ Back to Partners</RouterLink>
+    <RouterLink to="/partners" class="back-link">‹ {{ $t('baroqueart.partner.backLink') }}</RouterLink>
 
     <h1 class="section-heading">
-      Partner {{ typeLabel }}
-      <span class="heading-project"> — Discover Baroque Art</span>
+      {{ typeHeading }}
+      <span class="heading-project"> — {{ $t('baroqueart.project.discover') }}</span>
     </h1>
 
     <div class="content-box">
       <p class="result-count">
-        {{ totalCount }} partner{{ totalCount !== 1 ? 's' : '' }} found —
+        {{ $t('baroqueart.results.partnersFound') }}: {{ totalCount }} —
         <RouterLink :to="{ path: '/partners/results', query: { type: otherType } }">
-          view {{ otherTypeLabel }} instead
+          {{ otherTypeLabel }}
         </RouterLink>
       </p>
 
@@ -80,7 +104,7 @@ function partnerLink(partner) {
             </div>
 
             <div v-if="group.associated.length" class="partner-col associated-col">
-              <p class="associated-label">Associated {{ typeLabel }}</p>
+              <p class="associated-label">{{ associatedLabel }}</p>
               <p v-for="p in group.associated" :key="p.id">
                 <RouterLink :to="partnerLink(p)">{{ partnerLabel(p.id) }}</RouterLink>
               </p>
@@ -89,7 +113,7 @@ function partnerLink(partner) {
         </details>
       </div>
 
-      <p v-else class="no-results">No partner {{ typeLabel.toLowerCase() }} found.</p>
+      <p v-else class="no-results">{{ noneFoundLabel }}</p>
     </div>
   </div>
 </template>
