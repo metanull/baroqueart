@@ -10,7 +10,8 @@ combines three `@metanull` packages from GitHub Packages:
 | Package | Role |
 | --- | --- |
 | `@metanull/baroqueart-data` | the dataset (JSON + `manifest.json`, **private**) |
-| `@metanull/viewer-core` | application engine (routing, data access, i18n) |
+| `@metanull/viewer-core` | application engine (routing, data access, the text runtime and the language service) |
+| `@metanull/viewer-i18n` | the texts shared with the other MWNF websites (this one receives the `standalone` bundle: `core` + `layout`) |
 | `@metanull/viewer-layout` | page structure (`PageShell` + sections), themed via `theme/tokens.css` |
 
 Because the data package is private, every `npm install` needs authenticated
@@ -49,28 +50,38 @@ its thirteen stories.
 ## Translator — editing the website's texts
 
 You only need a GitHub account and a browser. The files under `locales/` hold
-the interface texts (menu labels, buttons, messages), one file per language —
-`en.json` is English, `fr.json` French, and so on. The museum content itself
-arrives already translated and is not edited here.
+**this website's own texts**, one file per language — `en.json` is English,
+`fr.json` French, and so on.
+
+Texts shared with the other MWNF websites — the skip link, the language
+chooser, the words "Home", "Previous" and "Next" — are not here: they live in
+[`viewer-i18n`](https://github.com/metanull/viewer-i18n) and are edited there,
+the same way. This website can override any of them by writing the same entry
+name in its own file. The museum content itself arrives already translated and
+is not edited anywhere.
 
 1. **Open the folder.** Bookmark this link on the website's GitHub page:
    `locales/`. Click the language file you want to change.
 2. **Click the pencil** (✏️, top right of the file view). The file opens in an
    editable text box. Change only the text between the second pair of
-   quotation marks on a line — the part before the colon is the identifier
-   and must stay exactly as it is. Pieces in curly braces like `{page}` are
-   filled automatically — keep them, but you may move them within the
-   sentence.
+   quotation marks on a line — the part before the colon is the name of the
+   entry and must stay exactly as it is.
 3. **To start a new language**, open `en.json`, copy all of its content, then
    create the new file (Add file → Create new file) named with the two-letter
-   language code, e.g. `it.json`, paste, and translate the texts.
+   language code, e.g. `it.json`, paste, and translate the texts. A language
+   does not have to be complete: anything you have not translated shows in
+   English.
 4. **Click "Commit changes…" then "Propose changes".** GitHub asks nothing
    else — it saves your edit as a proposal.
 5. **Wait for the automatic check.** After a minute or two, the proposal page
    shows a green tick and your change goes live on the website by itself a few
-   minutes later. If something is off (a missing quote, a forgotten `{page}`),
-   a comment appears explaining in plain language what to fix — edit again on
-   the same page and the check reruns.
+   minutes later. If something is off, a comment appears explaining in plain
+   language what to fix — edit again on the same page and the check reruns.
+
+A text is **just text**, formatted with Markdown if you want: `**bold**`,
+`*italic*`, `[a link](https://example.org)`. It may not contain HTML tags, and
+it may not contain `{` or `}` — nothing is ever inserted into a text, so a
+number or a date is placed next to it by the website rather than inside it.
 
 ---
 

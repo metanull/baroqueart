@@ -48,4 +48,14 @@ export default [
       'vue/multi-word-component-names': 'off',
     },
   },
+  {
+    files: ['src/**/*.vue'],
+    rules: {
+      // A sentence typed into a template is a text nobody can translate, and
+      // nothing else will notice it: `viewer-i18n-check` verifies the entries a
+      // page asks for, not the words it never asked for. Reported rather than
+      // blocking — a stray "·" separator is not worth stopping a build for.
+      'vue/no-bare-strings-in-template': 'warn',
+    },
+  },
 ]

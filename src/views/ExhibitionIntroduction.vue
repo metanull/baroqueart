@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
+import { useI18n } from '@metanull/viewer-core'
 import { useInventoryData } from '../composables/useInventoryData.js'
 
 const route = useRoute()
@@ -85,15 +85,15 @@ function back() {
 
 <template>
   <div v-if="!exhibition" class="content-box not-found">
-    <p>Exhibition not found.</p>
-    <router-link to="/exhibitions">← Return to Exhibitions</router-link>
+    <p>{{ $t('baroqueart.notFound.exhibition') }}</p>
+    <router-link to="/exhibitions">← {{ $t('baroqueart.exhibition.returnLink') }}</router-link>
   </div>
 
   <div v-else class="intro-wrap">
-    <a class="back-link" href="#" @click.prevent="back">← Back to {{ text.title ?? exhibition.internal_name }}</a>
+    <a class="back-link" href="#" @click.prevent="back">← {{ $t('baroqueart.exhibition.backTo') }} {{ text.title ?? exhibition.internal_name }}</a>
 
     <div class="content-box">
-      <h1 class="intro-title" v-html="mdInline(text.extra?.intro_header ?? 'Introduction')" />
+      <h1 class="intro-title" v-html="mdInline(text.extra?.intro_header ?? $t('baroqueart.exhibition.introduction'))" />
 
       <div class="intro-grid">
         <div class="intro-text-col">

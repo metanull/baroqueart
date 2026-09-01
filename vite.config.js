@@ -19,7 +19,10 @@ export default defineConfig({
     // viewer-core ships .vue source that esbuild pre-bundling cannot parse;
     // viewer-layout must not be pre-bundled either or its chunk gets a second
     // copy of the Vue runtime in dev (both packages share the app's vue).
-    exclude: ['@metanull/viewer-core', '@metanull/viewer-layout'],
+    // The /i18n subpath is listed as well as the package: Vite pre-bundles a
+    // subpath as its own entry, and a second copy of the text module would be
+    // a second, empty set of texts for whatever imported it.
+    exclude: ['@metanull/viewer-core', '@metanull/viewer-core/i18n', '@metanull/viewer-layout'],
     // The runtime deps reach the browser through those excluded packages, so
     // the dev-server dependency scan cannot discover them from the app's own
     // imports alone. Without this list a late discovery pre-bundles a second
@@ -27,7 +30,7 @@ export default defineConfig({
     // boot ("Cannot read properties of null" in runtime-core). Listing them
     // pre-bundles each exactly once, and the excluded packages get the same
     // copy.
-    include: ['vue', 'vue-i18n', 'vue-router', 'marked'],
+    include: ['vue', 'vue-router', 'marked'],
   },
   test: {
     environment: 'jsdom',

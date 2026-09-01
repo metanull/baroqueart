@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { I18nText } from '@metanull/viewer-core'
 import { useInventoryData } from '../composables/useInventoryData.js'
 
 const router = useRouter()
@@ -45,22 +46,21 @@ function search() {
 
 <template>
   <div>
-    <h1 class="section-heading">Permanent Collection</h1>
+    <h1 class="section-heading">{{ $t('baroqueart.nav.permanentCollection') }}</h1>
 
     <div class="content-box">
-      <p class="intro-text">
-        Select a filter to browse the Permanent Collection. Choose a category below,
-        then select a value and click <strong>Browse</strong>.
-      </p>
+      <I18nText tag="p" class="intro-text" keypath="baroqueart.pc.intro" />
 
       <table class="form-table filter-table">
         <tbody>
-          <!-- Filter type selector -->
+          <!-- Filter type selector. `value` is the filter this row drives and
+               never a text; each label is written out so the check that every
+               name resolves can read it. -->
           <tr v-for="opt in [
-            { value: 'country', label: 'Country' },
-            { value: 'partner', label: 'Holding Institution' },
-            { value: 'begin',   label: 'Start Date (from year)' },
-            { value: 'end',     label: 'End Date (up to year)' },
+            { value: 'country', label: $t('baroqueart.filter.country') },
+            { value: 'partner', label: $t('baroqueart.filter.holdingInstitution') },
+            { value: 'begin',   label: $t('baroqueart.filter.startDate') },
+            { value: 'end',     label: $t('baroqueart.filter.endDate') },
           ]" :key="opt.value">
             <th>
               <label :for="'filter-' + opt.value">
@@ -78,7 +78,7 @@ function search() {
               <!-- Country -->
               <template v-if="opt.value === 'country'">
                 <select v-model="selectedCountry" :disabled="filterType !== 'country'" style="width:280px">
-                  <option value="">— select a country —</option>
+                  <option value="">{{ $t('baroqueart.filter.selectCountry') }}</option>
                   <option v-for="c in availableCountries" :key="c.id" :value="c.id">{{ c.name }}</option>
                 </select>
               </template>
@@ -86,7 +86,7 @@ function search() {
               <!-- Partner -->
               <template v-else-if="opt.value === 'partner'">
                 <select v-model="selectedPartner" :disabled="filterType !== 'partner'" style="width:280px">
-                  <option value="">— select an institution —</option>
+                  <option value="">{{ $t('baroqueart.filter.selectInstitution') }}</option>
                   <option v-for="p in availablePartners" :key="p.id" :value="p.id">{{ p.name }}</option>
                 </select>
               </template>
@@ -97,7 +97,7 @@ function search() {
                   type="number"
                   v-model="beginDate"
                   :disabled="filterType !== 'begin'"
-                  placeholder="e.g. 800"
+                  :placeholder="$t('baroqueart.filter.fromYearHint')"
                   style="width:120px"
                 />
               </template>
@@ -108,7 +108,7 @@ function search() {
                   type="number"
                   v-model="endDate"
                   :disabled="filterType !== 'end'"
-                  placeholder="e.g. 1200"
+                  :placeholder="$t('baroqueart.filter.endDateHint')"
                   style="width:120px"
                 />
               </template>
@@ -119,7 +119,7 @@ function search() {
           <tr>
             <th></th>
             <td style="padding-top:12px">
-              <button class="btn" @click="search">Browse</button>
+              <button class="btn" @click="search">{{ $t('baroqueart.action.browse') }}</button>
             </td>
           </tr>
         </tbody>
