@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { marked } from 'marked'
+import { renderBlock, renderInline } from '@metanull/viewer-core'
 import itemsData from '@inventory-data/items.json'
 import countriesData from '@inventory-data/countries.json'
 import partnersData from '@inventory-data/partners.json'
@@ -209,15 +210,24 @@ function exhibitionLinksForItem(itemId) {
 // ── Markdown helpers ───────────────────────────────────────────────────────
 
 // Full block markdown → HTML (for prose sections)
+// Rendered by viewer-core, which escapes raw HTML instead of rendering it.
+// A data package holds Markdown — the importer converts the legacy HTML on
+// the way in — so a tag arriving in a field means that conversion missed it,
+// and it shows on the page as the characters it is. The fix belongs in the
+// importer; rendering it here would hide the one thing worth seeing, and it
+// would make a museum record the single input this site trusts with markup.
+//
+// mdStrip stays on marked: it lexes, it renders nothing, and it already
+// discards raw HTML nodes rather than passing them on.
 function md(text) {
   if (!text) return ''
-  return marked.parse(text, { breaks: true })
+  return renderBlock(text, { breaks: true })
 }
 
 // Inline markdown → HTML without block-level <p> wrapping (for titles, names)
 function mdInline(text) {
   if (!text) return ''
-  return marked.parseInline(text)
+  return renderInline(text)
 }
 
 // Strip all markdown to plain text (for alt attributes, search matching, etc.)
