@@ -211,15 +211,15 @@ function exhibitionLinksForItem(itemId) {
 //
 // mdStrip stays on marked: it lexes, it renders nothing, and it already
 // discards raw HTML nodes rather than passing them on.
-function md(text) {
+function md(text, glossary) {
   if (!text) return ''
-  return renderBlock(text, { breaks: true })
+  return renderBlock(text, { breaks: true, glossary })
 }
 
 // Inline markdown → HTML without block-level <p> wrapping (for titles, names)
-function mdInline(text) {
+function mdInline(text, glossary) {
   if (!text) return ''
-  return renderInline(text)
+  return renderInline(text, { glossary })
 }
 
 // Strip all markdown to plain text (for alt attributes, search matching, etc.)
