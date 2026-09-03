@@ -62,21 +62,22 @@ function labelText(it) {
 
 function labelHtml(it) {
   if (!it) return ''
-  return mdInlineGloss(itemText(it).name ?? it.internal_name ?? it.id)
+  return mdInline(itemText(it).name ?? it.internal_name ?? it.id, glossaryEntries.value)
 }
 
 // Item content (not the app's own English interface) follows the active
 // language's natural direction — Arabic reads right-to-left.
 const contentDir = computed(() => (activeLang.value === 'ar' ? 'rtl' : 'ltr'))
 
-// ── Glossary term hyperlinking ────────────────────────────────────────
+// ── Glossary term highlighting ────────────────────────────────────────
 //
 // Legacy wires known glossary words/phrases directly into item text (e.g.
 // "thuluth" on database_item.php), opening a popup with the term's
-// definition on click (glossary1.php). We do the same: wrap every spelling
-// of this item's glossary_ids, in the active language, in a clickable span
-// before markdown rendering — marked passes inline HTML through untouched —
-// then handle clicks on those spans via event delegation (v-html content
+// definition on click (glossary1.php). We do the same, but highlighting is
+// done by viewer-core's renderBlock/renderInline as a marked inline token
+// (a `glossary` option — see metanull/viewer-core#30) rather than by
+// wrapping spans into raw text before markdown parsing runs. Clicks on the
+// resulting spans are still handled via event delegation (v-html content
 // isn't part of Vue's own template, so it can't bind @click directly).
 
 const glossaryTranslationsCache = ref({})
@@ -93,61 +94,23 @@ async function loadGlossaryTranslations(lang) {
 
 watch(activeLang, lang => loadGlossaryTranslations(lang), { immediate: true })
 
-// spelling (lowercased) -> { gid, spelling, definition } for this item's glossary
-// terms in the active language, longest spelling first so multi-word phrases
-// match before any single word they contain.
+// { id, spelling, definition } for this item's glossary terms in the active
+// language — id/spelling is exactly the shape renderBlock/renderInline's
+// `glossary` option expects.
 const glossaryEntries = computed(() => {
   const ids = item.value?.glossary_ids ?? []
   if (!ids.length) return []
   const byLang = glossaryTranslationsCache.value[activeLang.value] ?? {}
   const entries = []
-  for (const gid of ids) {
-    const entry = byLang[gid]
+  for (const id of ids) {
+    const entry = byLang[id]
     if (!entry?.spellings?.length) continue
     for (const spelling of entry.spellings) {
-      entries.push({ gid, spelling, definition: entry.definition ?? '' })
+      entries.push({ id, spelling, definition: entry.definition ?? '' })
     }
   }
-  return entries.sort((a, b) => b.spelling.length - a.spelling.length)
+  return entries
 })
-
-const glossaryRegex = computed(() => {
-  const entries = glossaryEntries.value
-  if (!entries.length) return null
-  const escaped = entries.map(e => e.spelling.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-  return new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi')
-})
-
-const spellingToEntry = computed(() => {
-  const m = new Map()
-  for (const e of glossaryEntries.value) m.set(e.spelling.toLowerCase(), e)
-  return m
-})
-
-// Wraps every glossary spelling occurrence in `text` with a clickable span,
-// safe to run on raw markdown/plain text before md()/mdInline() renders it.
-function glossify(text) {
-  if (!text || !glossaryRegex.value) return text
-  return text.replace(glossaryRegex.value, match => {
-    const entry = spellingToEntry.value.get(match.toLowerCase())
-    if (!entry) return match
-    return `<span class="gloss-term" data-gid="${entry.gid}">${match}</span>`
-  })
-}
-
-function mdGloss(text) {
-  return md(glossify(text))
-}
-
-function mdInlineGloss(text) {
-  return mdInline(glossify(text))
-}
-
-// Plain-text fields (key facts) aren't markdown — glossify then render the
-// resulting span(s) as-is, no further markdown parsing.
-function glossifyPlain(text) {
-  return glossify(text ?? '')
-}
 
 const activeGlossaryTerm = ref(null) // { spelling, definition } | null
 
@@ -155,7 +118,7 @@ function onDetailClick(event) {
   const el = event.target?.closest?.('.gloss-term')
   if (!el) return
   event.preventDefault()
-  const entry = glossaryEntries.value.find(e => e.gid === el.dataset.gid)
+  const entry = glossaryEntries.value.find(e => e.id === el.dataset.gid)
   activeGlossaryTerm.value = {
     spelling: el.textContent,
     definition: entry?.definition ?? '',
@@ -393,7 +356,7 @@ function back() {
         <tbody>
           <tr v-for="fact in keyFacts" :key="fact.label">
             <th>{{ fact.label }}</th>
-            <td :dir="contentDir" v-html="glossifyPlain(fact.value)"></td>
+            <td :dir="contentDir" v-html="mdInline(fact.value, glossaryEntries)"></td>
           </tr>
         </tbody>
       </table>
@@ -402,7 +365,7 @@ function back() {
       <template v-for="section in contentSections" :key="section.id">
         <section class="content-section">
           <h2 class="content-section-heading">{{ section.heading }}</h2>
-          <div v-html="mdGloss(section.value)" class="prose" :dir="contentDir" />
+          <div v-html="md(section.value, glossaryEntries)" class="prose" :dir="contentDir" />
         </section>
 
         <!-- Short description toggle (legacy: pc_view_sdesc), directly below Description -->
@@ -417,7 +380,7 @@ function back() {
           >
             {{ showShortDescription ? $t('baroqueart.action.hideShortDescription') : $t('baroqueart.action.viewShortDescription') }}
           </button>
-          <div v-if="showShortDescription" v-html="mdGloss(shortDescription)" class="prose" :dir="contentDir" />
+          <div v-if="showShortDescription" v-html="md(shortDescription, glossaryEntries)" class="prose" :dir="contentDir" />
         </section>
       </template>
 
@@ -429,7 +392,7 @@ function back() {
           <p v-if="itemText(d).location" class="special-feature-meta">{{ itemText(d).location }}</p>
           <p v-if="itemText(d).dates" class="special-feature-meta">{{ itemText(d).dates }}</p>
           <p v-if="d.artist_names?.length" class="special-feature-meta">{{ d.artist_names.join(', ') }}</p>
-          <div v-if="itemText(d).description" v-html="mdGloss(itemText(d).description)" class="prose" />
+          <div v-if="itemText(d).description" v-html="md(itemText(d).description, glossaryEntries)" class="prose" />
           <div v-if="d.images?.length" class="images">
             <figure v-for="(img, i) in d.images" :key="i">
               <img :src="img.url" :alt="img.captions?.[activeLang] ?? ''" loading="lazy" class="detail-img" />
