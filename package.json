@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@metanull/baroqueart-data": "^2.0.1",
-    "@metanull/viewer-core": "^1.3.0",
+    "@metanull/viewer-core": "^1.4.0",
     "@metanull/viewer-i18n": "^1.5.0",
     "@metanull/viewer-layout": "^2.0.0",
     "marked": "^18.0.11",
