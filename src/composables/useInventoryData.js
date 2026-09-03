@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { marked } from 'marked'
-import { renderBlock, renderInline } from '@metanull/viewer-core'
+import { renderBlock, renderInline, useDataPackage } from '@metanull/viewer-core'
 import itemsData from '@inventory-data/items.json'
 import countriesData from '@inventory-data/countries.json'
 import partnersData from '@inventory-data/partners.json'
@@ -36,6 +36,8 @@ const availableLangs = ref([
 ])
 const defaultLang = 'en'
 
+const { loadTranslations } = useDataPackage()
+
 const enItemTranslations = ref({})
 const enCountryTranslations = ref({})
 const enPartnerTranslations = ref({})
@@ -45,47 +47,37 @@ const translationsCache = ref({}) // lang -> item translations (for detail view)
 
 let enLoaded = false
 
-// Glob instead of literal imports: which translation files exist varies by
-// dataset/export (e.g. timeline events currently ship without translations
-// in any language), and a literal import of an absent file fails the build.
-// The glob only binds files that actually exist in the installed package;
-// absent ones resolve to empty maps.
-const enTranslationLoaders = import.meta.glob('@inventory-data/translations/*.en.json')
-
-function loadEnFile(entity) {
-  const suffix = `/translations/${entity}.en.json`
-  const key = Object.keys(enTranslationLoaders).find(k => k.endsWith(suffix))
-  return key ? enTranslationLoaders[key]() : Promise.resolve({ default: {} })
-}
-
+// Every translation file is loaded by name through useDataPackage — which
+// only binds files that actually exist in the installed package, resolving
+// absent ones to empty maps — never by a dynamic import with an interpolated
+// specifier (`import(`...${lang}...`)`), which a bundler can't resolve
+// statically and so bundles every language eagerly instead of lazily loading
+// the one asked for. That is what made this build unable to finish in CI.
 async function loadEnglishTranslations() {
   if (enLoaded) return
   enLoaded = true
-  await Promise.allSettled([
-    loadEnFile('items').then(m => { enItemTranslations.value = m.default }),
-    loadEnFile('countries').then(m => { enCountryTranslations.value = m.default }),
-    loadEnFile('partners').then(m => { enPartnerTranslations.value = m.default }),
-    loadEnFile('timeline_events').then(m => { enTimelineEventTranslations.value = m.default }),
-    loadEnFile('collections').then(m => { enCollectionTranslations.value = m.default }),
+  const [itemsT, countriesT, partnersT, timelineEventsT, collectionsT] = await Promise.all([
+    loadTranslations('items', 'en'),
+    loadTranslations('countries', 'en'),
+    loadTranslations('partners', 'en'),
+    loadTranslations('timeline_events', 'en'),
+    loadTranslations('collections', 'en'),
   ])
+  enItemTranslations.value = itemsT
+  enCountryTranslations.value = countriesT
+  enPartnerTranslations.value = partnersT
+  enTimelineEventTranslations.value = timelineEventsT
+  enCollectionTranslations.value = collectionsT
   // Seed English into the detail-view cache too
   if (!translationsCache.value['en']) {
     translationsCache.value = { ...translationsCache.value, en: enItemTranslations.value }
   }
 }
 
-// Template-literal dynamic import (not a glob) so Vite code-splits one chunk
-// per language, fetched only when that language is first activated.
 async function loadLangTranslations(lang) {
   if (translationsCache.value[lang]) return
-  try {
-    const m = await import(`@inventory-data/translations/items.${lang}.json`)
-    translationsCache.value = { ...translationsCache.value, [lang]: m.default }
-  } catch {
-    // No items translation file for this language: cache an empty map so the
-    // missing file is not re-fetched on every render.
-    translationsCache.value = { ...translationsCache.value, [lang]: {} }
-  }
+  const data = await loadTranslations('items', lang)
+  translationsCache.value = { ...translationsCache.value, [lang]: data }
 }
 
 // Call immediately so lists are populated as soon as the app boots
