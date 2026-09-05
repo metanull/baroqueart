@@ -2,12 +2,16 @@
 import { computed } from 'vue'
 import { useInventoryData } from '../composables/useInventoryData.js'
 
-const { exhibitions, enCollectionTranslations, mdInline } = useInventoryData()
+const {
+  exhibitions,
+  mdInline,
+  tr,
+} = useInventoryData()
 
 const exhibitionList = computed(() =>
   exhibitions.value.map(e => ({
     ...e,
-    title: enCollectionTranslations.value[e.id]?.title ?? e.internal_name,
+    title: tr('collections', e.id)?.title ?? e.internal_name,
   }))
 )
 </script>

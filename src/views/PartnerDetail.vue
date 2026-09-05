@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from '@metanull/viewer-core'
 import { useInventoryData } from '../composables/useInventoryData.js'
@@ -8,10 +8,15 @@ const route = useRoute()
 const router = useRouter()
 const { locale, t } = useI18n()
 const {
-  partners, items,
-  availableLangs, defaultLang,
-  enPartnerTranslations,
-  countryLabel, md, mdInline,
+  availableLanguages,
+  countryLabel,
+  defaultLang,
+  items,
+  loadTranslations,
+  md,
+  mdInline,
+  partners,
+  tr,
 } = useInventoryData()
 
 const partner = computed(() => partners.value.find(p => p.id === decodeURIComponent(route.params.id)) ?? null)
@@ -20,34 +25,19 @@ const partner = computed(() => partners.value.find(p => p.id === decodeURICompon
 // Follows the global site locale; falls back to the dataset default when the
 // locale has no partner translations.
 
-const activeLang = computed(() => (availableLangs.value.includes(locale.value) ? locale.value : defaultLang))
-const partnerTranslationsCache = ref({})
-
-async function loadPartnerLangTranslations(lang) {
-  if (partnerTranslationsCache.value[lang]) return
-  try {
-    const m = await import(`@inventory-data/translations/partners.${lang}.json`)
-    partnerTranslationsCache.value = { ...partnerTranslationsCache.value, [lang]: m.default }
-  } catch {
-    partnerTranslationsCache.value = { ...partnerTranslationsCache.value, [lang]: {} }
-  }
-}
-
-watch(activeLang, lang => loadPartnerLangTranslations(lang), { immediate: true })
+const activeLang = computed(() => (availableLanguages('items').includes(locale.value) ? locale.value : defaultLang))
+watch(activeLang, lang => loadTranslations('partners', lang), { immediate: true })
 
 // The partner's own curatorial text, in the active content language. Kept
-// clear of `t`, which is this website's interface texts.
+// clear of `t`, which is this website's interface texts, and of `tr`, which
+// is the lookup rather than one record's fields.
 //
-// Falls back to the English record when the active language has none: the
-// offered languages come from the item translations, and the package's
-// per-entity coverage does not line up with them — several of the languages a
-// visitor can pick ship no partners file at all, which would leave the whole
-// partner sheet empty.
-const tr = computed(() =>
-  partnerTranslationsCache.value[activeLang.value]?.[partner.value?.id]
-    ?? enPartnerTranslations.value[partner.value?.id]
-    ?? {}
-)
+// `tr` falls back to the English record when the active language has none,
+// which this page needs: the offered languages come from the item
+// translations, and the package's per-entity coverage does not line up with
+// them — several of the languages a visitor can pick ship no partners file at
+// all, which would otherwise leave the whole partner sheet empty.
+const text = computed(() => tr('partners', partner.value?.id, activeLang.value))
 
 // ── Related items (View Objects / View Monuments) ────────────────────────
 
@@ -69,7 +59,7 @@ function viewItemsLink() {
 // ── Contact ────────────────────────────────────────────────────────────
 
 const hasContactInfo = computed(() =>
-  !!(tr.value.address || tr.value.phone || tr.value.email || tr.value.website || partner.value?.additional_urls?.length)
+  !!(text.value.address || text.value.phone || text.value.email || text.value.website || partner.value?.additional_urls?.length)
 )
 
 function normalizeUrl(url) {
@@ -122,16 +112,16 @@ function back() {
     <div class="detail content-box">
       <div class="detail-type-badge">{{ partner.type }}</div>
 
-      <h1 class="detail-title" v-html="mdInline(tr.name ?? partner.id)" />
-      <h2 v-if="tr.city || partner.country_id" class="detail-subtitle">
-        <template v-if="tr.city">{{ tr.city }}<template v-if="partner.country_id">, </template></template>
+      <h1 class="detail-title" v-html="mdInline(text.name ?? partner.id)" />
+      <h2 v-if="text.city || partner.country_id" class="detail-subtitle">
+        <template v-if="text.city">{{ text.city }}<template v-if="partner.country_id">, </template></template>
         <template v-if="partner.country_id">{{ countryLabel(partner.country_id) }}</template>
       </h2>
 
       <!-- View objects / monuments -->
       <div v-if="relatedItems.length" class="view-items-row">
         <RouterLink :to="viewItemsLink()" class="btn">{{ viewItemsLabel }} ({{ relatedItems.length }}) →</RouterLink>
-        <a v-if="tr.website" :href="normalizeUrl(tr.website)" target="_blank" rel="noopener" class="homepage-link">
+        <a v-if="text.website" :href="normalizeUrl(text.website)" target="_blank" rel="noopener" class="homepage-link">
           {{ $t('baroqueart.action.visitWebsite') }} ↗
         </a>
       </div>
@@ -148,9 +138,9 @@ function back() {
       </div>
 
       <!-- About -->
-      <section v-if="tr.description" class="content-section">
+      <section v-if="text.description" class="content-section">
         <h2 class="content-section-heading">{{ $t('baroqueart.partner.about') }}</h2>
-        <div v-html="md(tr.description)" class="prose" />
+        <div v-html="md(text.description)" class="prose" />
       </section>
 
       <!-- Contact -->
@@ -158,11 +148,11 @@ function back() {
         <h2 class="content-section-heading">{{ $t('baroqueart.partner.contact') }}</h2>
 
         <div v-if="hasContactInfo" class="contact-block">
-          <p v-if="tr.address" class="contact-address">{{ tr.address }}</p>
-          <p v-if="tr.phone">{{ $t('baroqueart.partner.phone') }}: {{ tr.phone }}</p>
-          <p v-if="tr.email"><a :href="`mailto:${tr.email}`">{{ tr.email }}</a></p>
-          <p v-if="tr.website">
-            <a :href="normalizeUrl(tr.website)" target="_blank" rel="noopener">{{ tr.website }}</a>
+          <p v-if="text.address" class="contact-address">{{ text.address }}</p>
+          <p v-if="text.phone">{{ $t('baroqueart.partner.phone') }}: {{ text.phone }}</p>
+          <p v-if="text.email"><a :href="`mailto:${text.email}`">{{ text.email }}</a></p>
+          <p v-if="text.website">
+            <a :href="normalizeUrl(text.website)" target="_blank" rel="noopener">{{ text.website }}</a>
             <template v-for="(u, i) in partner.additional_urls" :key="i">
               &nbsp;|&nbsp;<a :href="normalizeUrl(u.url)" target="_blank" rel="noopener">{{ u.title ?? u.url }}</a>
             </template>

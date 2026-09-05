@@ -7,7 +7,13 @@ import { useInventoryData } from '../composables/useInventoryData.js'
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
-const { timelines, timelineEvents, countryLabel, enTimelineEventTranslations, md } = useInventoryData()
+const {
+  countryLabel,
+  md,
+  timelineEvents,
+  timelines,
+  tr,
+} = useInventoryData()
 
 const PAGE_SIZE = 15
 
@@ -107,14 +113,13 @@ function goToPage(n) {
   currentPage.value = n
   const q = { ...route.query, page: String(n) }
   if (n === 1) delete q.page
-  router.replace({ path: '/timeline/results', query: q })
-  window.scrollTo(0, 0)
+  router.replace({ path: '/timeline/results', query: q })
 }
 
 // ── Display helpers ──────────────────────────────────────────────────────
 
 function dateRangeLabel(event) {
-  const t = enTimelineEventTranslations.value[event.id]
+  const t = tr('timeline_events', event.id)
   if (t?.date_from_description) {
     return t.date_to_description
       ? `${t.date_from_description} – ${t.date_to_description}`
@@ -192,7 +197,7 @@ const activeFilterLabel = computed(() => {
             <div class="timeline-country">{{ countryLabel(event.country_id) }}</div>
             <div
               class="timeline-description"
-              v-html="md(enTimelineEventTranslations[event.id]?.description ?? '')"
+              v-html="md(tr('timeline_events', event.id)?.description ?? '')"
             />
             <RouterLink :to="itemsLink(event)" class="timeline-items-link">
               {{ $t('baroqueart.action.viewItemsFromPeriod') }} →

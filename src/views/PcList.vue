@@ -8,9 +8,14 @@ const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 const {
-  items, countries, partners,
-  countryLabel, partnerLabel,
-  itemLabel, enItemTranslations, mdInline,
+  countries,
+  countryLabel,
+  itemLabel,
+  items,
+  mdInline,
+  partnerLabel,
+  partners,
+  tr,
 } = useInventoryData()
 
 const PAGE_SIZE = 20
@@ -136,8 +141,7 @@ function goToPage(n) {
   currentPage.value = n
   const q = { ...route.query, page: String(n) }
   if (n === 1) delete q.page
-  router.replace({ path: '/permanent-collection/results', query: q })
-  window.scrollTo(0, 0)
+  router.replace({ path: '/permanent-collection/results', query: q })
 }
 
 // ── Active filter label ───────────────────────────────────────────────
@@ -216,10 +220,10 @@ const activeFilterLabel = computed(() => {
             <div v-else class="item-thumb-placeholder" />
           </div>
           <div class="item-list-info">
-            <div class="item-list-name" v-html="mdInline(enItemTranslations[item.id]?.name ?? item.internal_name ?? item.id)" />
+            <div class="item-list-name" v-html="mdInline(tr('items', item.id)?.name ?? item.internal_name ?? item.id)" />
             <div class="item-list-meta">
               <span v-if="item.country_id">{{ countryLabel(item.country_id) }}</span>
-              <span v-if="enItemTranslations[item.id]?.dates">{{ enItemTranslations[item.id].dates }}</span>
+              <span v-if="tr('items', item.id)?.dates">{{ tr('items', item.id).dates }}</span>
               <span v-if="item.partner_id && partners.some(p => p.id === item.partner_id)">{{ partnerLabel(item.partner_id) }}</span>
               <span v-if="item.type" class="item-type-badge">{{ item.type }}</span>
             </div>

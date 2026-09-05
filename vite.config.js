@@ -30,7 +30,7 @@ export default defineConfig({
     // boot ("Cannot read properties of null" in runtime-core). Listing them
     // pre-bundles each exactly once, and the excluded packages get the same
     // copy.
-    include: ['vue', 'vue-router', 'marked'],
+    include: ['vue', 'vue-router'],
   },
   test: {
     environment: 'jsdom',

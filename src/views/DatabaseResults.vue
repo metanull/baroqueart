@@ -10,8 +10,8 @@ const { t } = useI18n()
 const {
   items,
   itemLabel, countryLabel,
-  enItemTranslations, mdInline,
-  translationsCache, loadLangTranslations,
+  defaultLang, mdInline,
+  loadTranslations, tr, translations,
 } = useInventoryData()
 
 const PAGE_SIZE = 20
@@ -50,13 +50,13 @@ watch(() => route.query, q => {
 })
 
 watch(() => search.value.lang, lang => {
-  if (lang) loadLangTranslations(lang)
+  if (lang) loadTranslations('items', lang)
 }, { immediate: true })
 
 // Translations to search against for the currently-selected search language
 // (falls back to English when no language is chosen).
 function translationsFor(lang) {
-  return lang ? (translationsCache.value[lang] ?? {}) : enItemTranslations.value
+  return translations('items', lang || defaultLang)
 }
 
 // ── Refine row ────────────────────────────────────────────────────────
@@ -209,8 +209,7 @@ function goToPage(n) {
   currentPage.value = n
   const q = { ...route.query, page: String(n) }
   if (n === 1) delete q.page
-  router.replace({ path: '/database/results', query: q })
-  window.scrollTo(0, 0)
+  router.replace({ path: '/database/results', query: q })
 }
 
 // ── Active search summary ────────────────────────────────────────────
@@ -291,11 +290,11 @@ const searchSummary = computed(() => {
             <div v-else class="item-thumb-placeholder" />
           </div>
           <div class="item-list-info">
-            <div class="item-list-name" v-html="mdInline(enItemTranslations[item.id]?.name ?? item.internal_name ?? item.id)" />
+            <div class="item-list-name" v-html="mdInline(tr('items', item.id)?.name ?? item.internal_name ?? item.id)" />
             <div class="item-list-meta">
               <span v-if="item.country_id">{{ countryLabel(item.country_id) }}</span>
-              <span v-if="enItemTranslations[item.id]?.dates">{{ enItemTranslations[item.id].dates }}</span>
-              <span v-if="enItemTranslations[item.id]?.location">{{ enItemTranslations[item.id].location }}</span>
+              <span v-if="tr('items', item.id)?.dates">{{ tr('items', item.id).dates }}</span>
+              <span v-if="tr('items', item.id)?.location">{{ tr('items', item.id).location }}</span>
               <span class="item-type-badge">{{ item.type }}</span>
             </div>
           </div>
