@@ -7,13 +7,16 @@ import { useInventoryData } from '../composables/useInventoryData.js'
 const route = useRoute()
 const router = useRouter()
 const {
+  availableLanguages,
+  defaultLang,
+  exhibitionById,
+  exhibitionThemeById,
   itemById,
-  availableLangs, defaultLang,
-  translationsCache, loadLangTranslations,
+  loadTranslations,
+  md,
+  mdInline,
   partnerLabel,
-  exhibitionById, exhibitionThemeById,
-  enCollectionTranslations,
-  md, mdInline,
+  tr,
 } = useInventoryData()
 
 const exhibition = computed(() => exhibitionById(decodeURIComponent(route.params.exhibitionId)) ?? null)
@@ -44,22 +47,10 @@ const activePage = computed(() => pages.value[activeTabIndex.value] ?? null)
 // ── Language (global locale; collection text loaded on demand, per-lang) ──
 
 const { locale } = useI18n()
-const activeLang = computed(() => availableLangs.value.includes(locale.value) ? locale.value : defaultLang)
-const collectionLangCache = ref({})
-
-async function loadCollectionLangTranslations(lang) {
-  if (collectionLangCache.value[lang]) return
-  try {
-    const m = await import(`@inventory-data/translations/collections.${lang}.json`)
-    collectionLangCache.value = { ...collectionLangCache.value, [lang]: m.default }
-  } catch {
-    collectionLangCache.value = { ...collectionLangCache.value, [lang]: {} }
-  }
-}
-
+const activeLang = computed(() => availableLanguages('items').includes(locale.value) ? locale.value : defaultLang)
 watch(activeLang, lang => {
-  loadCollectionLangTranslations(lang)
-  loadLangTranslations(lang)
+  loadTranslations('collections', lang)
+  loadTranslations('items', lang)
 }, { immediate: true })
 
 function collectionText(collectionId) {
@@ -68,8 +59,8 @@ function collectionText(collectionId) {
   // per-entity coverage does not line up with them: two of the languages a
   // visitor can pick ship no collections file at all. Without this the whole
   // exhibition — titles and prose — renders blank for them.
-  return collectionLangCache.value[activeLang.value]?.[collectionId]
-    ?? enCollectionTranslations.value[collectionId]
+  return tr('collections', collectionId, activeLang.value)
+    ?? tr('collections', collectionId)
     ?? {}
 }
 
@@ -81,7 +72,7 @@ const PLACEHOLDER_TITLE = /^(Theme|Page) \d+$/
 function resolveTitle(collectionId, fallbackName) {
   const local = collectionText(collectionId).title
   if (local && !PLACEHOLDER_TITLE.test(local)) return local
-  const en = enCollectionTranslations.value[collectionId]?.title
+  const en = tr('collections', collectionId)?.title
   if (en && !PLACEHOLDER_TITLE.test(en)) return en
   return fallbackName
 }
@@ -115,7 +106,7 @@ const gridItems = computed(() => {
   const page = activePage.value
   if (!page) return []
   return page.items
-    .map(entry => ({ entry, item: itemById.value[entry.id] }))
+    .map(entry => ({ entry, item: itemById.value.get(entry.id) }))
     .filter(({ item }) => item)
 })
 
@@ -155,7 +146,7 @@ const selectedDisplay = computed(() => {
   // Main/default view: caption override (current language) merged with the
   // item's own generic translation, mirroring the legacy behaviour.
   const caption = sel.entry.caption?.[activeLang.value] ?? sel.entry.caption?.en ?? {}
-  const t = translationsCache.value[activeLang.value]?.[sel.item.id] ?? {}
+  const t = tr('items', sel.item.id, activeLang.value) ?? {}
   return {
     name: caption.name ?? t.name ?? sel.item.internal_name ?? sel.item.id,
     date: caption.date ?? t.dates ?? '',

@@ -5,13 +5,19 @@ import { useInventoryData } from '../composables/useInventoryData.js'
 
 const route = useRoute()
 const router = useRouter()
-const { exhibitionById, exhibitionThemes, enCollectionTranslations, md, mdInline } = useInventoryData()
+const {
+  exhibitionById,
+  exhibitionThemes,
+  md,
+  mdInline,
+  tr,
+} = useInventoryData()
 
 const exhibition = computed(() => exhibitionById(decodeURIComponent(route.params.exhibitionId)) ?? null)
 
 const text = computed(() => {
   const e = exhibition.value
-  return e ? (enCollectionTranslations.value[e.id] ?? {}) : {}
+  return e ? (tr('collections', e.id) ?? {}) : {}
 })
 
 // "Introduction" is not a theme — it's the exhibition's own intro text plus
@@ -27,7 +33,7 @@ const themeList = computed(() => {
   if (!e) return []
   return exhibitionThemes(e.id).map(t => ({
     ...t,
-    title: enCollectionTranslations.value[t.id]?.title ?? t.internal_name,
+    title: tr('collections', t.id)?.title ?? t.internal_name,
   }))
 })
 

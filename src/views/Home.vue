@@ -5,7 +5,12 @@ import { I18nText } from '@metanull/viewer-core'
 import { useInventoryData } from '../composables/useInventoryData.js'
 
 const router = useRouter()
-const { items, itemLabel, enItemTranslations, mdInline } = useInventoryData()
+const {
+  itemLabel,
+  items,
+  mdInline,
+  tr,
+} = useInventoryData()
 
 // Pick a random item that has an image, as the featured spotlight
 const featured = computed(() => {
@@ -75,12 +80,12 @@ function goToItem(item) {
         </div>
         <div class="featured-info">
           <p class="featured-type">{{ featured.type }}</p>
-          <h3 class="featured-name" v-html="mdInline(enItemTranslations[featured.id]?.name ?? featured.internal_name ?? featured.id)" />
-          <p v-if="enItemTranslations[featured.id]?.location" class="featured-meta">
-            {{ enItemTranslations[featured.id].location }}
+          <h3 class="featured-name" v-html="mdInline(tr('items', featured.id)?.name ?? featured.internal_name ?? featured.id)" />
+          <p v-if="tr('items', featured.id)?.location" class="featured-meta">
+            {{ tr('items', featured.id).location }}
           </p>
-          <p v-if="enItemTranslations[featured.id]?.dates" class="featured-meta">
-            {{ enItemTranslations[featured.id].dates }}
+          <p v-if="tr('items', featured.id)?.dates" class="featured-meta">
+            {{ tr('items', featured.id).dates }}
           </p>
           <span class="featured-link">{{ $t('baroqueart.action.viewDetails') }} →</span>
         </div>
