@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { createViewer, mergeMessages } from '@metanull/viewer-core'
+import { describe, expect, it, vi } from 'vitest'
+import { createViewer, loadEntities, mergeMessages } from '@metanull/viewer-core'
 import { checkOfferedLanguages } from '@metanull/viewer-core/testing'
 import { catalogues as sharedTexts } from '@metanull/viewer-i18n/standalone'
 import ownTexts from '../locales/en.json'
@@ -11,8 +11,9 @@ import { useInventoryData } from '../src/composables/useInventoryData.js'
 // nothing about the chrome — every text would render as its own name.
 const messages = mergeMessages(sharedTexts, { en: ownTexts })
 
-async function mountSite() {
-  window.location.hash = '#/'
+// Mounted on the address under test, as a visitor arrives from a link.
+async function mountSite(hash = '#/') {
+  window.location.hash = hash
   const app = createViewer({ ...config, messages })
   const host = document.createElement('div')
   document.body.appendChild(host)
@@ -34,6 +35,32 @@ describe('website smoke test', () => {
 
     app.unmount()
   }, 20000)
+
+  // The Permanent Collection list and the item sheet run on the platform's
+  // composed views (metanull/viewer-core#50): the rows and the filter panel
+  // come from the catalogue spec, the sheet's labels from the sheet spec,
+  // and what only this website has fills the views' slots.
+  it('renders the Permanent Collection on the composed results view', async () => {
+    const { app, host } = await mountSite('#/permanent-collection/results')
+    await vi.waitFor(() => expect(host.querySelector('.mwnf-list__row')).not.toBeNull(), { timeout: 20000 })
+    expect(host.querySelector('.mwnf-catalogue')).not.toBeNull()
+    expect(host.querySelector('.mwnf-filter')).not.toBeNull()
+    expect(host.querySelector('.section-heading').textContent).toContain('Permanent Collection')
+    // Legacy's count, in its two halves.
+    expect(host.querySelectorAll('.mwnf-summary__count').length).toBe(2)
+    app.unmount()
+  }, 60000)
+
+  it('renders the item sheet on the composed record view', async () => {
+    const [items] = await loadEntities(['items'])
+    const object = items.find((i) => i.type === 'object') ?? items[0]
+    const { app, host } = await mountSite(`#/item/${encodeURIComponent(object.id)}`)
+    await vi.waitFor(() => expect(host.querySelector('.mwnf-sheet__label')).not.toBeNull(), { timeout: 20000 })
+    expect(host.querySelector('.mwnf-record')).not.toBeNull()
+    expect(host.querySelector('.detail-type-badge').textContent.trim()).toBe(object.type)
+    expect(host.querySelector('.detail-title').textContent.trim()).not.toBe('')
+    app.unmount()
+  }, 60000)
 
   it('declares every route by name, and leaves the catch-all to the router', () => {
     const names = config.extraViews.map((r) => r.name)
