@@ -67,7 +67,9 @@ const thgGalleryLinks = (record) =>
         <a class="back-link" href="#" @click.prevent="back">← {{ $t('record.action.backToResults') }}</a>
         <router-link v-if="timelineLink(record)" :to="timelineLink(record)" class="timeline-link">{{ $t('record.action.viewOnTimeline') }} →</router-link>
       </div>
-      <div class="detail-type-badge">{{ record.type }}</div>
+      <!-- In a block of its own: the view lays the header out as a column,
+           and a badge placed directly in it would stretch to the full width. -->
+      <div><span class="detail-type-badge">{{ record.type }}</span></div>
       <RecordLanguages :languages="languages" :language="language" @select="select" />
       <h1 class="detail-title" :dir="dir" v-html="mdInline(text.name ?? record.internal_name ?? record.id, glossary)"></h1>
     </template>
