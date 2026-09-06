@@ -1,159 +1,73 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useI18n } from '@metanull/viewer-core'
+import { computed } from 'vue'
+import { dateRange, sortChronological, useFacets, useI18n, useListQuery, usePagination } from '@metanull/viewer-core'
+import { FacetSelect, FilterPanel, Pagination, RecordList, ResultsSummary } from '@metanull/viewer-layout/content'
 import { useInventoryData } from '../composables/useInventoryData.js'
+import { DATE_MODE, FACETS, PAGE_SIZE } from '../composables/catalogue.js'
 
-const route = useRoute()
-const router = useRouter()
+// The Permanent Collection list: the filters in the URL, read by viewer-core;
+// the options from the catalogue spec, over every record, as legacy offered
+// them; the date rule the spec names; chronological order, undated last;
+// the rows, the pages and the counts drawn by viewer-layout.
+
 const { t } = useI18n()
-const {
-  countries,
-  countryLabel,
-  itemLabel,
-  items,
-  mdInline,
-  partnerLabel,
-  partners,
-  tr,
-} = useInventoryData()
+const { countryLabel, itemLabel, items, mdInline, partnerLabel, partners, tr } = useInventoryData()
 
-const PAGE_SIZE = 20
+const { filters, page, apply, reset, goToPage } = useListQuery({
+  keys: ['country', 'partner', 'begin', 'end'],
+})
+const options = useFacets(items, FACETS)
 
-// ── Filter state (synced with URL query) ────────────────────────────────
-
-const filterCountry = ref(route.query.country ?? '')
-const filterPartner = ref(route.query.partner ?? '')
-const filterBegin   = ref(route.query.begin   ?? '')
-const filterEnd     = ref(route.query.end     ?? '')
-const currentPage   = ref(parseInt(route.query.page ?? '1', 10) || 1)
-
-watch(
-  [filterCountry, filterPartner, filterBegin, filterEnd],
-  () => { currentPage.value = 1 }
-)
-
-watch(
-  () => route.query,
-  q => {
-    filterCountry.value = q.country ?? ''
-    filterPartner.value = q.partner ?? ''
-    filterBegin.value   = q.begin   ?? ''
-    filterEnd.value     = q.end     ?? ''
-    currentPage.value   = parseInt(q.page ?? '1', 10) || 1
-  }
-)
-
-function applyFilters() {
-  const q = {}
-  if (filterCountry.value) q.country = filterCountry.value
-  if (filterPartner.value) q.partner = filterPartner.value
-  if (filterBegin.value)   q.begin   = filterBegin.value
-  if (filterEnd.value)     q.end     = filterEnd.value
-  router.push({ path: '/permanent-collection/results', query: q })
-}
-
-function resetFilters() {
-  filterCountry.value = ''
-  filterPartner.value = ''
-  filterBegin.value   = ''
-  filterEnd.value     = ''
-  applyFilters()
-}
-
-// ── Build available options from actual items ───────────────────────────
-
-const availableCountries = computed(() => {
-  const ids = new Set(items.value.map(i => i.country_id).filter(Boolean))
-  return countries.value
-    .filter(c => ids.has(c.id))
-    .map(c => ({ id: c.id, name: countryLabel(c.id) }))
-    .sort((a, b) => a.name.localeCompare(b.name))
+const results = computed(() => {
+  let list = items.value ?? []
+  if (filters.country) list = list.filter((item) => item.country_id === filters.country)
+  if (filters.partner) list = list.filter((item) => item.partner_id === filters.partner)
+  list = dateRange(list, { begin: filters.begin, end: filters.end, mode: DATE_MODE })
+  return sortChronological(list)
 })
 
-const availablePartners = computed(() => {
-  const ids = new Set(items.value.map(i => i.partner_id).filter(Boolean))
-  return partners.value
-    .filter(p => ids.has(p.id))
-    .map(p => ({ id: p.id, name: partnerLabel(p.id) }))
-    .sort((a, b) => a.name.localeCompare(b.name))
-})
+const pageInfo = usePagination(results, { page, size: PAGE_SIZE })
 
-// ── Filtered items ────────────────────────────────────────────────────
-
-const filteredItems = computed(() => {
-  let result = items.value
-
-  if (filterCountry.value) {
-    result = result.filter(item => item.country_id === filterCountry.value)
-  }
-  if (filterPartner.value) {
-    result = result.filter(item => item.partner_id === filterPartner.value)
-  }
-  if (filterBegin.value) {
-    const begin = parseInt(filterBegin.value, 10)
-    if (!isNaN(begin)) {
-      result = result.filter(item => {
-        if (item.end_date !== null) return item.end_date >= begin
-        if (item.start_date !== null) return item.start_date >= begin
-        return true
-      })
-    }
-  }
-  if (filterEnd.value) {
-    const end = parseInt(filterEnd.value, 10)
-    if (!isNaN(end)) {
-      result = result.filter(item => {
-        if (item.start_date !== null) return item.start_date <= end
-        if (item.end_date !== null) return item.end_date <= end
-        return true
-      })
-    }
-  }
-
-  // Legacy orders results chronologically by start date (undated items last).
-  return [...result].sort((a, b) => {
-    const ad = a.start_date ?? Infinity
-    const bd = b.start_date ?? Infinity
-    return ad - bd
-  })
-})
-
-// "[N objects, M monuments]" split, matching legacy's result-count phrasing.
-const resultCounts = computed(() => {
+// "[N objects, M monuments]", legacy's phrasing of the count.
+const summary = computed(() => {
   let objects = 0
   let monuments = 0
-  for (const item of filteredItems.value) {
+  for (const item of results.value) {
     if (item.type === 'monument') monuments++
     else objects++
   }
-  return { objects, monuments }
+  return [
+    { label: t('catalogue.results.objectsFound'), count: objects },
+    { label: t('catalogue.results.monumentsFound'), count: monuments },
+  ]
 })
 
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredItems.value.length / PAGE_SIZE)))
+const rows = computed(() =>
+  pageInfo.value.rows.map((item) => {
+    const text = tr('items', item.id)
+    return {
+      id: item.id,
+      image: item.images?.[0]?.url ?? '',
+      imageAlt: itemLabel(item),
+      name: mdInline(text.name ?? item.internal_name ?? item.id),
+      meta: [
+        countryLabel(item.country_id),
+        text.dates,
+        (partners.value ?? []).some((p) => p.id === item.partner_id) ? partnerLabel(item.partner_id) : '',
+      ].filter(Boolean),
+      badge: item.type,
+      to: { name: 'item', params: { id: item.id } },
+    }
+  }),
+)
 
-const pagedItems = computed(() => {
-  const start = (currentPage.value - 1) * PAGE_SIZE
-  return filteredItems.value.slice(start, start + PAGE_SIZE)
-})
-
-function goToPage(n) {
-  currentPage.value = n
-  const q = { ...route.query, page: String(n) }
-  if (n === 1) delete q.page
-  router.replace({ path: '/permanent-collection/results', query: q })
-}
-
-// ── Active filter label ───────────────────────────────────────────────
-
-// null when nothing is filtered, so the heading's suffix is driven by the
-// absence of a filter rather than by comparing against a text — a comparison
-// that would stop being true the moment the text is translated.
+// The heading's suffix: null when nothing is filtered, so it depends on the
+// absence of a filter rather than on a comparison against a text.
 const activeFilterLabel = computed(() => {
-  if (filterCountry.value) return countryLabel(filterCountry.value)
-  if (filterPartner.value) return partnerLabel(filterPartner.value)
-  if (filterBegin.value)   return `${t('baroqueart.filter.from')} ${filterBegin.value}`
-  if (filterEnd.value)     return `${t('baroqueart.filter.upTo')} ${filterEnd.value}`
+  if (filters.country) return countryLabel(filters.country)
+  if (filters.partner) return partnerLabel(filters.partner)
+  if (filters.begin) return `${t('catalogue.filter.from')} ${filters.begin}`
+  if (filters.end) return `${t('catalogue.filter.upTo')} ${filters.end}`
   return null
 })
 </script>
@@ -165,120 +79,33 @@ const activeFilterLabel = computed(() => {
       <span v-if="activeFilterLabel" class="heading-filter"> — {{ activeFilterLabel }}</span>
     </h1>
 
-    <!-- Filter panel -->
-    <div class="content-box filter-panel">
-      <strong class="filter-label">{{ $t('baroqueart.filter.heading') }}</strong>
+    <FilterPanel class="filters" :title="$t('catalogue.filter.heading')" @apply="apply()" @reset="reset()">
+      <FacetSelect v-model="filters.country" :label="$t('catalogue.facet.country')" :options="options.country" :any-label="$t('catalogue.facet.any')" />
+      <FacetSelect v-model="filters.partner" :label="$t('catalogue.facet.holdingInstitution')" :options="options.partner" :any-label="$t('catalogue.facet.any')" />
+      <label class="mwnf-facet">
+        <span class="mwnf-facet__label">{{ $t('catalogue.facet.fromYear') }}</span>
+        <input v-model="filters.begin" type="number" class="year" :placeholder="$t('baroqueart.filter.fromYearHint')" />
+      </label>
+      <label class="mwnf-facet">
+        <span class="mwnf-facet__label">{{ $t('catalogue.facet.toYear') }}</span>
+        <input v-model="filters.end" type="number" class="year" :placeholder="$t('baroqueart.filter.toYearHint')" />
+      </label>
+    </FilterPanel>
 
-      <div class="filter-row">
-        <label>{{ $t('baroqueart.filter.country') }}</label>
-        <select v-model="filterCountry" style="width:200px">
-          <option value="">{{ $t('baroqueart.filter.any') }}</option>
-          <option v-for="c in availableCountries" :key="c.id" :value="c.id">{{ c.name }}</option>
-        </select>
-      </div>
-
-      <div class="filter-row">
-        <label>{{ $t('baroqueart.filter.holdingInstitution') }}</label>
-        <select v-model="filterPartner" style="width:200px">
-          <option value="">{{ $t('baroqueart.filter.any') }}</option>
-          <option v-for="p in availablePartners" :key="p.id" :value="p.id">{{ p.name }}</option>
-        </select>
-      </div>
-
-      <div class="filter-row">
-        <label>{{ $t('baroqueart.filter.fromYear') }}</label>
-        <input type="number" v-model="filterBegin" :placeholder="$t('baroqueart.filter.fromYearHint')" style="width:100px" />
-      </div>
-
-      <div class="filter-row">
-        <label>{{ $t('baroqueart.filter.toYear') }}</label>
-        <input type="number" v-model="filterEnd" :placeholder="$t('baroqueart.filter.toYearHint')" style="width:100px" />
-      </div>
-
-      <div class="filter-actions">
-        <button class="btn" @click="applyFilters">{{ $t('baroqueart.action.apply') }}</button>
-        <button class="btn btn-secondary" style="margin-left:8px" @click="resetFilters">{{ $t('baroqueart.action.reset') }}</button>
-      </div>
-    </div>
-
-    <!-- Results -->
     <div class="content-box">
-      <p class="result-count">
-        {{ $t('baroqueart.results.objectsFound') }}: {{ resultCounts.objects }},
-        {{ $t('baroqueart.results.monumentsFound') }}: {{ resultCounts.monuments }}
-      </p>
+      <ResultsSummary :parts="summary" />
 
-      <ul v-if="pagedItems.length" class="item-list">
-        <li
-          v-for="item in pagedItems"
-          :key="item.id"
-          class="item-list-row"
-          @click="$router.push(`/item/${encodeURIComponent(item.id)}`)"
-        >
-          <div class="item-thumb">
-            <img v-if="item.images?.length" :src="item.images[0].url" :alt="itemLabel(item)" loading="lazy" />
-            <div v-else class="item-thumb-placeholder" />
-          </div>
-          <div class="item-list-info">
-            <div class="item-list-name" v-html="mdInline(tr('items', item.id)?.name ?? item.internal_name ?? item.id)" />
-            <div class="item-list-meta">
-              <span v-if="item.country_id">{{ countryLabel(item.country_id) }}</span>
-              <span v-if="tr('items', item.id)?.dates">{{ tr('items', item.id).dates }}</span>
-              <span v-if="item.partner_id && partners.some(p => p.id === item.partner_id)">{{ partnerLabel(item.partner_id) }}</span>
-              <span v-if="item.type" class="item-type-badge">{{ item.type }}</span>
-            </div>
-          </div>
-        </li>
-      </ul>
+      <RecordList :records="rows">
+        <template #empty>{{ $t('catalogue.results.noResultsFilter') }}</template>
+      </RecordList>
 
-      <p v-else class="no-results">{{ $t('baroqueart.results.noItemsFilter') }}</p>
-
-      <!-- Pagination -->
-      <div v-if="totalPages > 1" class="pagination">
-        <span class="pagination-info">
-          {{ currentPage }} / {{ totalPages }}
-        </span>
-        <button class="page-btn" :disabled="currentPage === 1" @click="goToPage(currentPage - 1)">‹ {{ $t('core.pagination.previous') }}</button>
-        <template v-for="p in totalPages" :key="p">
-          <button
-            v-if="Math.abs(p - currentPage) <= 3 || p === 1 || p === totalPages"
-            class="page-btn"
-            :class="{ active: p === currentPage }"
-            @click="goToPage(p)"
-          >{{ p }}</button>
-          <span v-else-if="Math.abs(p - currentPage) === 4" class="page-ellipsis">…</span>
-        </template>
-        <button class="page-btn" :disabled="currentPage === totalPages" @click="goToPage(currentPage + 1)">{{ $t('core.pagination.next') }} ›</button>
-      </div>
+      <Pagination :page-info="pageInfo" :window="7" @navigate="goToPage" />
     </div>
   </div>
 </template>
 
 <style scoped>
 .heading-filter { font-weight: normal; font-size: 14px; color: var(--muted); }
-
-.filter-panel { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
-.filter-label { font-family: 'Roboto', sans-serif; font-size: 12px; font-weight: bold; color: var(--muted); }
-.filter-row { display: flex; align-items: center; gap: 6px; font-family: 'Roboto', sans-serif; font-size: 12px; color: var(--muted); }
-.filter-actions { margin-left: auto; }
-
-.result-count {
-  font-family: 'Roboto', sans-serif;
-  font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-}
-
-.no-results { color: var(--muted); font-family: 'Roboto', sans-serif; font-size: 13px; padding: 20px 0; }
-
-.item-type-badge {
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-size: 10px;
-  color: #888;
-}
-
-.page-ellipsis { padding: 4px 4px; color: var(--muted); font-family: 'Roboto', sans-serif; font-size: 12px; }
+.filters { margin-bottom: 16px; }
+.year { width: 100px; }
 </style>
