@@ -9,7 +9,7 @@ import { useInventoryData } from './useInventoryData.js'
 // dynasty on this site), and the two facets of the Permanent Collection.
 // Two entrances and two results pages read this one declaration.
 
-const { countries, countryLabel, partnerLabel, partners } = useInventoryData()
+const { countries, countryLabel, itemLabel, mdInline, partnerLabel, partners, tr } = useInventoryData()
 
 /** Twenty rows a page, as the legacy pages showed. */
 export const PAGE_SIZE = 20
@@ -71,5 +71,69 @@ export const FACETS = {
     field: 'partner_id',
     label: partnerLabel,
     include: (id) => (partners.value ?? []).some((p) => p.id === id),
+  },
+}
+
+// ── The Permanent Collection, as a spec ─────────────────────────────────────
+//
+// What viewer-layout's `CatalogueResultsView` renders on
+// `/permanent-collection/results`: the two facets over every record, as
+// legacy offered them, the two years, the date rule above, chronological
+// order, twenty rows a page, and legacy's count phrased as "[N objects, M
+// monuments]". Every text is an entry name; the check that every name
+// resolves reads them here.
+
+export const permanentCollection = {
+  entity: 'items',
+  keys: ['country', 'partner', 'begin', 'end'],
+  facets: FACETS,
+  facetScope: 'all',
+  controls: [
+    { key: 'country', label: 'catalogue.facet.country', anyLabel: 'catalogue.facet.any' },
+    { key: 'partner', label: 'catalogue.facet.holdingInstitution', anyLabel: 'catalogue.facet.any' },
+    { key: 'begin', type: 'year', label: 'catalogue.facet.fromYear', placeholder: 'baroqueart.filter.fromYearHint' },
+    { key: 'end', type: 'year', label: 'catalogue.facet.toYear', placeholder: 'baroqueart.filter.toYearHint' },
+  ],
+  filterMode: 'apply',
+  filterTitle: 'catalogue.filter.heading',
+  dates: { mode: DATE_MODE },
+  sort: 'chronological',
+  pageSize: PAGE_SIZE,
+  variant: 'list',
+  recordRoute: 'item',
+  empty: 'catalogue.results.noResultsFilter',
+  pagination: { window: 7 },
+
+  // The row: the thumbnail, the name, the country, the date and the holder,
+  // the holder only when the package carries the partner, so a label is
+  // never an id.
+  record: (item) => {
+    const text = tr('items', item.id)
+    return {
+      id: item.id,
+      image: item.images?.[0]?.url ?? '',
+      imageAlt: itemLabel(item),
+      name: mdInline(text.name ?? item.internal_name ?? item.id),
+      meta: [
+        countryLabel(item.country_id),
+        text.dates,
+        (partners.value ?? []).some((p) => p.id === item.partner_id) ? partnerLabel(item.partner_id) : '',
+      ].filter(Boolean),
+      badge: item.type,
+      to: { name: 'item', params: { id: item.id } },
+    }
+  },
+
+  summary: ({ matching, t }) => {
+    let objects = 0
+    let monuments = 0
+    for (const item of matching) {
+      if (item.type === 'monument') monuments++
+      else objects++
+    }
+    return [
+      { label: t('catalogue.results.objectsFound'), count: objects },
+      { label: t('catalogue.results.monumentsFound'), count: monuments },
+    ]
   },
 }
