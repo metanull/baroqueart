@@ -1,500 +1,286 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { languageLabels, useI18n, useRecordLanguage } from '@metanull/viewer-core'
+import {
+  NotFoundView, citation, languageLabels, sheetRows, timelineLinkFor, useGlossaryPopup, useI18n,
+  useProjectName, useRecordSheet, useRelatedRecords,
+} from '@metanull/viewer-core'
+import {
+  GlossaryPopover, MediaGallery, RecordCredits, RecordLanguages, RecordSheet, RelatedRecords, SheetSection,
+} from '@metanull/viewer-layout/content'
 import { useInventoryData } from '../composables/useInventoryData.js'
 
-const route  = useRoute()
+// The item sheet. The mechanics — which language the record is read in, what
+// is loaded for it, the glossary terms it reaches, how a field becomes a row,
+// the credits, the related records, the timeline link — are viewer-core's.
+// What this page owns is the field specification (which fields, in what
+// order, under which labels, for an object and for a monument) and the
+// blocks only Baroque Art has: a monument's special features, the exhibition
+// links, the THG galleries.
+
+const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
-
-const {
-  items,
-  loadTranslations,
-  tr,
-  itemById,
-  itemLabel,
-  exhibitionLinksForItem,
-  md,
-  mdInline,
-} = useInventoryData()
-
-// ── Active item & language ────────────────────────────────────────────
+const projectName = useProjectName()
+const { exhibitionLinksForItem, itemById, itemLabel, items, md, mdInline, tr } = useInventoryData()
 
 const item = computed(() => itemById.value.get(decodeURIComponent(route.params.id)) ?? null)
 
-// The record's language, not the site's. It follows the site language where
-// this item carries it, English where it does not, and the item's first
-// language where it has neither — and the visitor may toggle it here, a
-// choice that stays on this sheet and never touches the site language or the
-// URL. Only the languages this item actually has a translation for are
-// offered: most items are translated into a handful, not all.
-const {
-  language: activeLang,
-  languages: itemLangs,
-  dir: contentDir,
-  select: selectLanguage,
-} = useRecordLanguage(item, { entity: 'items' })
+// ── Language, loads, glossary ─────────────────────────────────────────────
 
-// The switcher's labels: the language's own name where the package declares
-// one, its code in capitals where it does not.
+const {
+  language: activeLang, languages: itemLangs, dir: contentDir, select: selectLanguage,
+  text, ready, terms, glossary,
+} = useRecordSheet(item, { entity: 'items', translations: ['glossary'] })
+
 const recordLanguages = computed(() => languageLabels(itemLangs.value))
 
-watch(activeLang, lang => {
-  loadTranslations('items', lang)
-}, { immediate: true })
+// One listener on the sheet answers a click on any highlighted term.
+const { active: activeTerm, onClick: onGlossaryClick, close: closeGlossary } = useGlossaryPopup(terms)
+const activeTermHtml = computed(() => (activeTerm.value ? md(activeTerm.value.definition) : ''))
 
-// ── Translation helpers ───────────────────────────────────────────────
-
-// The curatorial text of an item, in the active content language. Named apart
-// from `t` on purpose: `t` is this website's interface texts, and passing an
-// item to it would also read to `viewer-i18n-check` as an entry asked for by
-// something other than a written-out name.
-function itemText(it) {
-  if (!it) return {}
-  return tr('items', it.id, activeLang.value) ?? {}
-}
-
-function labelText(it) {
-  if (!it) return ''
-  return itemLabel(it) // already mdStrip'd
-}
-
-function labelHtml(it) {
-  if (!it) return ''
-  return mdInline(itemText(it).name ?? it.internal_name ?? it.id, glossaryEntries.value)
-}
-
-// ── Glossary term highlighting ────────────────────────────────────────
+// ── The field specification ───────────────────────────────────────────────
 //
-// Legacy wires known glossary words/phrases directly into item text (e.g.
-// "thuluth" on database_item.php), opening a popup with the term's
-// definition on click (glossary1.php). We do the same, but highlighting is
-// done by viewer-core's renderBlock/renderInline as a marked inline token
-// (a `glossary` option — see metanull/viewer-core#30) rather than by
-// wrapping spans into raw text before markdown parsing runs. Clicks on the
-// resulting spans are still handled via event delegation (v-html content
-// isn't part of Vue's own template, so it can't bind @click directly).
-
-watch(activeLang, lang => loadTranslations('glossary', lang), { immediate: true })
-
-// { id, spelling, definition } for this item's glossary terms in the active
-// language — id/spelling is exactly the shape renderBlock/renderInline's
-// `glossary` option expects.
-const glossaryEntries = computed(() => {
-  const ids = item.value?.glossary_ids ?? []
-  if (!ids.length) return []
-  const entries = []
-  for (const id of ids) {
-    const entry = tr('glossary', id, activeLang.value)
-    if (!entry?.spellings?.length) continue
-    for (const spelling of entry.spellings) {
-      entries.push({ id, spelling, definition: entry.definition ?? '' })
-    }
-  }
-  return entries
-})
-
-const activeGlossaryTerm = ref(null) // { spelling, definition } | null
-
-function onDetailClick(event) {
-  const el = event.target?.closest?.('.gloss-term')
-  if (!el) return
-  event.preventDefault()
-  const entry = glossaryEntries.value.find(e => e.id === el.dataset.gid)
-  activeGlossaryTerm.value = {
-    spelling: el.textContent,
-    definition: entry?.definition ?? '',
-  }
-}
-
-function closeGlossaryModal() {
-  activeGlossaryTerm.value = null
-}
-
-// ── Related items ─────────────────────────────────────────────────────
-
-const relatedItems = computed(() => {
-  const links = item.value?.related_items ?? []
-  if (!links.length) return []
-  const seen = new Set()
-  return links
-    .map(link => {
-      const it = itemById.value.get(link.id)
-      if (!it || seen.has(it.id)) return null
-      seen.add(it.id)
-      return { item: it, justifications: link.justifications ?? {} }
-    })
-    .filter(Boolean)
-})
-
-// ── Key facts (metadata table), type-conditional field order ─────────
+// Legacy's two orders, `database_item.php`'s: a monument reads location,
+// date, architects, patrons; an object reads holder, date, artist, scribe,
+// inventory number, materials, dimensions, provenance, workshop, binding,
+// owners, place of production. Every label is a shared entry, written out
+// so the check that every name resolves can read it.
 
 const isMonument = computed(() => item.value?.type === 'monument')
 
-const keyFacts = computed(() => {
-  if (!item.value) return []
-  const it = item.value
-  const tr = itemText(it)
-  const facts = []
+const monumentFacts = computed(() => [
+  { key: 'alsoKnownAs', label: t('sheet.field.alsoKnownAs'), value: 'alternate_name' },
+  { key: 'location', label: t('sheet.field.location'), value: 'location' },
+  { key: 'date', label: t('sheet.field.dateOfMonument'), value: 'dates' },
+  { key: 'architects', label: t('sheet.field.architects'), value: 'architects' },
+  { key: 'patrons', label: t('sheet.field.patrons'), value: (c) => c.text.patrons ?? c.text.initial_owner },
+])
 
-  if (isMonument.value) {
-    if (tr.alternate_name)  facts.push({ label: t('baroqueart.sheet.alsoKnownAs'),    value: tr.alternate_name })
-    if (tr.location)        facts.push({ label: t('baroqueart.sheet.location'),       value: tr.location })
-    if (tr.dates)           facts.push({ label: t('baroqueart.sheet.dateOfMonument'), value: tr.dates })
-    if (tr.architects)      facts.push({ label: t('baroqueart.sheet.architects'),     value: tr.architects })
-    const patronValue = tr.patrons ?? tr.initial_owner
-    if (patronValue)        facts.push({ label: t('baroqueart.sheet.patrons'),        value: patronValue })
-  } else {
-    if (tr.alternate_name)      facts.push({ label: t('baroqueart.sheet.alsoKnownAs'),           value: tr.alternate_name })
-    if (tr.location)            facts.push({ label: t('baroqueart.sheet.location'),              value: tr.location })
-    if (tr.holder)              facts.push({ label: t('baroqueart.sheet.holdingMuseum'),         value: tr.holder })
-    if (tr.dates)               facts.push({ label: t('baroqueart.sheet.dateOfObject'),          value: tr.dates })
-    if (it.artist_names?.length) facts.push({ label: t('baroqueart.sheet.artist'),               value: it.artist_names.join(', ') })
-    if (tr.scriber)             facts.push({ label: t('baroqueart.sheet.scribe'),                value: tr.scriber })
-    if (it.owner_reference)     facts.push({ label: t('baroqueart.sheet.museumInventoryNumber'), value: it.owner_reference })
-    if (tr.type)                facts.push({ label: t('baroqueart.sheet.materialsTechniques'),   value: tr.type })
-    if (tr.dimensions)          facts.push({ label: t('baroqueart.sheet.dimensions'),            value: tr.dimensions })
-    if (tr.provenance)          facts.push({ label: t('baroqueart.sheet.provenance'),            value: tr.provenance })
-    if (tr.workshop)            facts.push({ label: t('baroqueart.sheet.workshop'),              value: tr.workshop })
-    if (tr.binding_desc)        facts.push({ label: t('baroqueart.sheet.binding'),               value: tr.binding_desc })
-    if (tr.owner)               facts.push({ label: t('baroqueart.sheet.owner'),                 value: tr.owner })
-    if (tr.initial_owner)       facts.push({ label: t('baroqueart.sheet.initialOwner'),          value: tr.initial_owner })
-    if (tr.place_of_production) facts.push({ label: t('baroqueart.sheet.placeOfProduction'),     value: tr.place_of_production })
-  }
+const objectFacts = computed(() => [
+  { key: 'alsoKnownAs', label: t('sheet.field.alsoKnownAs'), value: 'alternate_name' },
+  { key: 'location', label: t('sheet.field.location'), value: 'location' },
+  { key: 'holder', label: t('sheet.field.holdingMuseum'), value: 'holder' },
+  { key: 'date', label: t('sheet.field.dateOfObject'), value: 'dates' },
+  { key: 'artists', label: t('sheet.field.artists'), value: (c) => c.record.artist_names, join: ', ' },
+  { key: 'scribe', label: t('sheet.field.scribe'), value: 'scriber' },
+  { key: 'inventoryNumber', label: t('sheet.field.inventoryNumber'), value: (c) => c.record.owner_reference },
+  { key: 'materials', label: t('sheet.field.materials'), value: 'type' },
+  { key: 'dimensions', label: t('sheet.field.dimensions'), value: 'dimensions' },
+  { key: 'provenance', label: t('sheet.field.provenance'), value: 'provenance' },
+  { key: 'workshop', label: t('sheet.field.workshop'), value: 'workshop' },
+  { key: 'binding', label: t('sheet.field.binding'), value: 'binding_desc' },
+  { key: 'currentOwner', label: t('sheet.field.currentOwner'), value: 'owner' },
+  { key: 'originalOwner', label: t('sheet.field.originalOwner'), value: 'initial_owner' },
+  { key: 'placeOfProduction', label: t('sheet.field.placeOfProduction'), value: 'place_of_production' },
+])
 
-  return facts
-})
+const sheetContext = computed(() => ({ record: item.value, text: text.value, glossary: glossary.value }))
+const keyFacts = computed(() =>
+  item.value ? sheetRows(isMonument.value ? monumentFacts.value : objectFacts.value, sheetContext.value) : [],
+)
 
-// ── Content sections ──────────────────────────────────────────────────
+// The prose sections under the facts, with their legacy order and headings.
+const monumentSections = computed(() => [
+  { key: 'history', label: t('sheet.field.history'), value: 'history', render: 'block' },
+  { key: 'description', label: t('sheet.field.description'), value: 'description', render: 'block' },
+  { key: 'datation', label: t('sheet.field.monumentDatationMethod'), value: 'method_for_datation', render: 'block' },
+  { key: 'provenanceMethod', label: t('sheet.field.provenanceMethod'), value: 'method_for_provenance', render: 'block' },
+  { key: 'bibliography', label: t('sheet.field.bibliography'), value: 'bibliography', render: 'block' },
+])
+const objectSections = computed(() => [
+  { key: 'description', label: t('sheet.field.description'), value: 'description', render: 'block' },
+  { key: 'datation', label: t('sheet.field.datationMethod'), value: 'method_for_datation', render: 'block' },
+  { key: 'obtention', label: t('sheet.field.obtentionMethod'), value: 'obtention', render: 'block' },
+  { key: 'provenanceMethod', label: t('sheet.field.provenanceMethod'), value: 'method_for_provenance', render: 'block' },
+  { key: 'bibliography', label: t('sheet.field.bibliography'), value: 'bibliography', render: 'block' },
+  {
+    key: 'catalogue',
+    label: t('sheet.field.catalogue'),
+    value: (c) => (c.text.catalogue_holding_link ? `[${c.text.catalogue_holding_link}](${c.text.catalogue_holding_link})` : ''),
+    render: 'block',
+  },
+])
+const contentSections = computed(() =>
+  item.value ? sheetRows(isMonument.value ? monumentSections.value : objectSections.value, sheetContext.value) : [],
+)
 
-const contentSections = computed(() => {
-  if (!item.value) return []
-  const tr = itemText(item.value)
-  const monument = isMonument.value
-  const sections = []
-
-  // `id` is what the view keys and compares on; `heading` is a text and will
-  // read differently in every language, so nothing may branch on it.
-  if (monument) {
-    if (tr.history)               sections.push({ id: 'history',     heading: t('baroqueart.sheet.history'),                        value: tr.history })
-    if (tr.description)           sections.push({ id: 'description', heading: t('baroqueart.sheet.description'),                    value: tr.description })
-    if (tr.method_for_datation)   sections.push({ id: 'datation',    heading: t('baroqueart.sheet.howMonumentWasDated'),            value: tr.method_for_datation })
-    if (tr.method_for_provenance) sections.push({ id: 'provenance',  heading: t('baroqueart.sheet.howProvenanceWasEstablished'),    value: tr.method_for_provenance })
-    if (tr.bibliography)          sections.push({ id: 'bibliography', heading: t('baroqueart.sheet.selectedBibliography'),          value: tr.bibliography })
-  } else {
-    if (tr.description)           sections.push({ id: 'description', heading: t('baroqueart.sheet.description'),                    value: tr.description })
-    if (tr.method_for_datation)   sections.push({ id: 'datation',    heading: t('baroqueart.sheet.howDateAndOriginWereEstablished'), value: tr.method_for_datation })
-    if (tr.obtention)             sections.push({ id: 'obtention',   heading: t('baroqueart.sheet.howObjectWasObtained'),           value: tr.obtention })
-    if (tr.method_for_provenance) sections.push({ id: 'provenance',  heading: t('baroqueart.sheet.howProvenanceWasEstablished'),    value: tr.method_for_provenance })
-    if (tr.bibliography)          sections.push({ id: 'bibliography', heading: t('baroqueart.sheet.selectedBibliography'),          value: tr.bibliography })
-    if (tr.catalogue_holding_link) sections.push({ id: 'catalogue',  heading: t('baroqueart.sheet.catalogue'), value: `[${tr.catalogue_holding_link}](${tr.catalogue_holding_link})` })
-  }
-
-  return sections
-})
-
-// ── Short description — legacy's collapsible "view short description"
-// toggle (pc_view_sdesc), shown below the main Description when the item
-// also has a translation in a secondary context whose description is the
-// shorter summary. See Epic 11 in the islamicart parity backlog. ──
-
+// Legacy's collapsible short description (`pc_view_sdesc`), under the
+// description when the item also carries the shorter text.
+const shortDescriptionHtml = computed(() =>
+  text.value.short_description ? md(text.value.short_description, glossary.value) : '',
+)
 const showShortDescription = ref(false)
-
-const shortDescription = computed(() => {
-  if (!item.value) return null
-  return itemText(item.value).short_description ?? null
-})
-
 watch(() => item.value?.id, () => { showShortDescription.value = false })
 
-// ── Monument "Special Features" — sub-details already imported as child
-// items (type='detail', parent_id = this monument), just never surfaced ──
+// ── Images ────────────────────────────────────────────────────────────────
 
-const monumentDetails = computed(() => {
-  if (!item.value) return []
-  return items.value
-    .filter(i => i.parent_id === item.value.id && i.type === 'detail')
-    .sort((a, b) => (a.display_order ?? 9999) - (b.display_order ?? 9999))
-})
+const images = computed(() =>
+  (item.value?.images ?? []).map((img) => ({
+    url: img.url,
+    alt: img.captions?.[activeLang.value] ?? itemLabel(item.value),
+    caption: img.captions?.[activeLang.value] ?? '',
+    photographer: img.photographer ?? '',
+  })),
+)
 
-// ── Credits ───────────────────────────────────────────────────────────
+// ── Credits, citation, related, timeline ──────────────────────────────────
 
-const credits = computed(() => {
-  if (!item.value) return []
-  const tr = itemText(item.value)
-  const c = []
-  if (tr.author)                   c.push({ label: t('baroqueart.sheet.preparedBy'),               value: tr.author })
-  if (tr.copy_editor)              c.push({ label: t('baroqueart.sheet.copyeditedBy'),             value: tr.copy_editor })
-  if (tr.translator)               c.push({ label: t('baroqueart.sheet.translationBy'),            value: tr.translator })
-  if (tr.translation_copy_editor)  c.push({ label: t('baroqueart.sheet.translationCopyeditedBy'),  value: tr.translation_copy_editor })
-  return c
-})
+const credits = computed(() =>
+  [
+    ['author', t('sheet.field.preparedBy')],
+    ['copy_editor', t('sheet.field.copyeditedBy')],
+    ['translator', t('sheet.field.translationBy')],
+    ['translation_copy_editor', t('sheet.field.translationCopyeditedBy')],
+  ]
+    .filter(([field]) => text.value[field])
+    .map(([field, label]) => ({ label, value: text.value[field] })),
+)
 
-// ── Citation — mirrors legacy's auto-generated citation blurb + permalink ─
+const citationText = computed(() =>
+  item.value
+    ? citation({
+        author: text.value.author,
+        name: text.value.name ?? item.value.internal_name ?? '',
+        project: projectName('BAR'),
+        permalink: `${window.location.origin}${window.location.pathname}#/item/${encodeURIComponent(item.value.id)}`,
+        inWord: t('record.citation.in'),
+      })
+    : '',
+)
 
-const citation = computed(() => {
-  if (!item.value) return ''
-  const tr = itemText(item.value)
-  const name = labelText(item.value)
-  if (!name) return ''
-  const year = new Date().getFullYear()
-  const permalink = `${window.location.origin}${window.location.pathname}#/item/${encodeURIComponent(item.value.id)}`
-  const author = tr.author ? `${tr.author} ` : ''
-  return `${author}"${name}" ${t('baroqueart.sheet.citationIn')} ${t('baroqueart.project.discover')}, ${year}. ${permalink}`
-})
+const related = useRelatedRecords(item, { entity: 'items', language: activeLang })
+const relatedRows = computed(() =>
+  related.value.inPackage.map(({ record, justification }) => ({
+    id: record.id,
+    image: record.images?.[0]?.url ?? '',
+    imageAlt: itemLabel(record),
+    name: mdInline(tr('items', record.id, activeLang.value).name ?? record.internal_name ?? record.id),
+    meta: justification ? [justification] : [],
+    badge: record.type,
+    to: { name: 'item', params: { id: record.id } },
+  })),
+)
 
-// ── "View on Timeline" — country + date-range proximity link. Legacy never
-// stores a direct item↔HCR-event link either; it computes this live by
-// country/date overlap, same as this link's target route already does. ──
+const timelineLink = computed(() => timelineLinkFor(item.value, { name: 'timeline-results' }))
 
-const timelineLink = computed(() => {
-  if (!item.value?.country_id) return null
-  const begin = item.value.start_date
-  const end = item.value.end_date
-  if (begin == null && end == null) return null
-  const query = { country: item.value.country_id }
-  if (begin != null) query.begin = String(begin)
-  if (end != null) query.end = String(end)
-  return { path: '/timeline/results', query }
-})
-
-// ── Related video/audio (item_media) — prefer the active content language,
-// fall back to any language the item actually has media in ────────────
+// ── Related media — the active language first, any language otherwise ─────
 
 const relatedMedia = computed(() => {
   const all = item.value?.media ?? []
-  if (!all.length) return []
-  const inLang = all.filter(m => m.language === activeLang.value)
+  const inLang = all.filter((m) => m.language === activeLang.value)
   return inLang.length ? inLang : all
 })
 
-// ── "On display in" (Exhibitions) — which Virtual Exhibitions feature
-// this item, derived client-side from collections.json (see Epic 12 in the
-// islamicart parity backlog; distinct from the THG cross-links below). ──
+// ── What only this website has ────────────────────────────────────────────
 
-const onDisplayInLinks = computed(() => {
-  if (!item.value) return []
-  return exhibitionLinksForItem(item.value.id).map(l => ({
-    label: l.label,
-    to: l.themeId
-      ? { path: `/exhibitions/${encodeURIComponent(l.exhibitionId)}/theme/${encodeURIComponent(l.themeId)}` }
-      : { path: `/exhibitions/${encodeURIComponent(l.exhibitionId)}/introduction` },
-  }))
-})
+// A monument's sub-details are child items of type `detail`.
+const monumentDetails = computed(() =>
+  (items.value ?? [])
+    .filter((i) => i.parent_id === item.value?.id && i.type === 'detail')
+    .sort((a, b) => (a.display_order ?? 9999) - (b.display_order ?? 9999)),
+)
+const detailText = (detail) => tr('items', detail.id, activeLang.value)
 
-// ── THG (Thematic Gallery) cross-links — a separate legacy project's
-// galleries also featuring this item. THG is due for a rewrite, so these
-// are placeholder same-page anchors, not real external URLs, for now. ──
-
-const thgGalleryLinks = computed(() => {
-  return (item.value?.thg_galleries ?? []).map(g => ({
-    name: g.name,
-    href: `#ThematicGallery-${g.name}`,
-  }))
-})
-
-// ── Navigation ─────────────────────────────────────────────────────────
+const onDisplayInLinks = computed(() =>
+  item.value
+    ? exhibitionLinksForItem(item.value.id).map((l) => ({
+        label: l.label,
+        to: l.themeId
+          ? { name: 'exhibition-theme', params: { exhibitionId: l.exhibitionId, themeId: l.themeId } }
+          : { name: 'exhibition-introduction', params: { exhibitionId: l.exhibitionId } },
+      }))
+    : [],
+)
+// THG is due for a rewrite; these stay same-page anchors, not addresses.
+const thgGalleryLinks = computed(() =>
+  (item.value?.thg_galleries ?? []).map((g) => ({ name: g.name, href: `#ThematicGallery-${g.name}` })),
+)
 
 function back() {
-  if (window.history.length > 2) {
-    router.back()
-  } else {
-    router.push('/')
-  }
+  if (window.history.length > 2) router.back()
+  else router.push('/')
 }
 </script>
 
 <template>
-  <div v-if="!item" class="content-box not-found">
-    <p>{{ $t('baroqueart.notFound.item') }}</p>
-    <router-link to="/">← {{ $t('baroqueart.action.returnHome') }}</router-link>
-  </div>
+  <NotFoundView v-if="!item" />
 
   <div v-else class="detail-wrap">
-    <!-- Breadcrumb / back -->
-    <a class="back-link" href="#" @click.prevent="back">← {{ $t('baroqueart.action.backToResults') }}</a>
-    <router-link v-if="timelineLink" :to="timelineLink" class="timeline-link">{{ $t('baroqueart.action.viewOnTimeline') }} →</router-link>
+    <a class="back-link" href="#" @click.prevent="back">← {{ $t('record.action.backToResults') }}</a>
+    <router-link v-if="timelineLink" :to="timelineLink" class="timeline-link">{{ $t('record.action.viewOnTimeline') }} →</router-link>
 
-    <div class="detail content-box" @click="onDetailClick">
-      <!-- Type badge -->
+    <div class="detail content-box" @click="onGlossaryClick">
       <div class="detail-type-badge">{{ item.type }}</div>
 
-      <!-- Title -->
-      <!-- The languages this record carries. Picking one changes what this
-           sheet is read in and nothing else: the site language, the URL and
-           every other page are untouched. -->
-      <div class="record-languages" v-if="recordLanguages.length > 1">
-        <button
-          v-for="entry in recordLanguages"
-          :key="entry.code"
-          type="button"
-          class="record-language"
-          :class="{ 'record-language--active': entry.code === activeLang }"
-          :aria-pressed="entry.code === activeLang ? 'true' : 'false'"
-          :lang="entry.code"
-          @click="selectLanguage(entry.code)"
-        >{{ entry.label }}</button>
-      </div>
+      <RecordLanguages :languages="recordLanguages" :language="activeLang" @select="selectLanguage" />
 
-      <h1 class="detail-title" :dir="contentDir" v-html="labelHtml(item)" />
+      <h1 class="detail-title" :dir="contentDir" v-html="mdInline(text.name ?? item.internal_name ?? item.id, glossary)"></h1>
 
-      <!-- Images -->
-      <div v-if="item.images?.length" class="images">
-        <figure v-for="(img, i) in item.images" :key="i">
-          <img :src="img.url" :alt="img.captions?.[activeLang] ?? ''" loading="lazy" class="detail-img" />
-          <figcaption v-if="img.captions?.[activeLang] || img.photographer">
-            <span v-if="img.captions?.[activeLang]">{{ img.captions[activeLang] }}</span>
-            <span v-if="img.photographer" class="photo-credit">© {{ img.photographer }}</span>
-          </figcaption>
-        </figure>
-      </div>
+      <MediaGallery :images="images" />
 
-      <!-- Key facts table -->
-      <table v-if="keyFacts.length" class="key-facts">
-        <tbody>
-          <tr v-for="fact in keyFacts" :key="fact.label">
-            <th>{{ fact.label }}</th>
-            <td :dir="contentDir" v-html="mdInline(fact.value, glossaryEntries)"></td>
-          </tr>
-        </tbody>
-      </table>
+      <p v-if="!ready" class="detail-status">{{ $t('core.status.loading') }}</p>
 
-      <!-- Content sections (markdown) -->
-      <template v-for="section in contentSections" :key="section.id">
-        <section class="content-section">
-          <h2 class="content-section-heading">{{ section.heading }}</h2>
-          <div v-html="md(section.value, glossaryEntries)" class="prose" :dir="contentDir" />
-        </section>
+      <RecordSheet :rows="keyFacts" :dir="contentDir" />
 
-        <!-- Short description toggle (legacy: pc_view_sdesc), directly below Description -->
-        <section
-          v-if="section.id === 'description' && shortDescription"
-          class="content-section short-description"
-        >
-          <button
-            type="button"
-            class="short-description-toggle"
-            @click="showShortDescription = !showShortDescription"
-          >
-            {{ showShortDescription ? $t('baroqueart.action.hideShortDescription') : $t('baroqueart.action.viewShortDescription') }}
+      <template v-for="section in contentSections" :key="section.key">
+        <SheetSection :heading="section.label" :html="section.html" :dir="contentDir" />
+        <section v-if="section.key === 'description' && shortDescriptionHtml" class="short-description">
+          <button type="button" class="short-description-toggle" :aria-expanded="showShortDescription ? 'true' : 'false'" @click="showShortDescription = !showShortDescription">
+            {{ showShortDescription ? $t('record.action.hideShortDescription') : $t('record.action.viewShortDescription') }}
           </button>
-          <div v-if="showShortDescription" v-html="md(shortDescription, glossaryEntries)" class="prose" :dir="contentDir" />
+          <div v-if="showShortDescription" class="mwnf-sheet__block" :dir="contentDir" v-html="shortDescriptionHtml"></div>
         </section>
       </template>
 
-      <!-- Special Features (monument sub-details) -->
-      <div v-if="monumentDetails.length" class="special-features">
-        <h2 class="sub-section-title">{{ $t('baroqueart.sheet.specialFeatures') }}</h2>
-        <div v-for="d in monumentDetails" :key="d.id" class="special-feature" :dir="contentDir">
-          <h3 class="special-feature-name" v-html="mdInline(itemText(d).name ?? d.internal_name ?? d.id)" />
-          <p v-if="itemText(d).location" class="special-feature-meta">{{ itemText(d).location }}</p>
-          <p v-if="itemText(d).dates" class="special-feature-meta">{{ itemText(d).dates }}</p>
+      <!-- Special features: a monument's sub-details -->
+      <SheetSection v-if="monumentDetails.length" :heading="$t('sheet.field.specialFeatures')" :dir="contentDir">
+        <div v-for="d in monumentDetails" :key="d.id" class="special-feature">
+          <h3 class="special-feature-name" v-html="mdInline(detailText(d).name ?? d.internal_name ?? d.id)"></h3>
+          <p v-if="detailText(d).location" class="special-feature-meta">{{ detailText(d).location }}</p>
+          <p v-if="detailText(d).dates" class="special-feature-meta">{{ detailText(d).dates }}</p>
           <p v-if="d.artist_names?.length" class="special-feature-meta">{{ d.artist_names.join(', ') }}</p>
-          <div v-if="itemText(d).description" v-html="md(itemText(d).description, glossaryEntries)" class="prose" />
-          <div v-if="d.images?.length" class="images">
-            <figure v-for="(img, i) in d.images" :key="i">
-              <img :src="img.url" :alt="img.captions?.[activeLang] ?? ''" loading="lazy" class="detail-img" />
-            </figure>
-          </div>
+          <div v-if="detailText(d).description" class="mwnf-sheet__block" v-html="md(detailText(d).description, glossary)"></div>
+          <MediaGallery v-if="d.images?.length" :images="d.images.map((img) => ({ url: img.url, alt: img.captions?.[activeLang] ?? '' }))" variant="row" />
         </div>
-      </div>
+      </SheetSection>
 
-      <!-- Related Video -->
-      <div v-if="relatedMedia.length" class="related-media">
-        <h2 class="sub-section-title">{{ $t('baroqueart.sheet.relatedVideo') }}</h2>
+      <SheetSection v-if="relatedMedia.length" :heading="$t('record.related.video')">
         <div v-for="(m, i) in relatedMedia" :key="i" class="media-entry">
           <a :href="m.url" target="_blank" rel="noopener" class="media-title">{{ m.title }}</a>
           <p v-if="m.description" class="media-description">{{ m.description }}</p>
         </div>
-      </div>
+      </SheetSection>
 
-      <!-- Credits -->
-      <div v-if="credits.length" class="credits">
-        <h2 class="credits-heading">{{ $t('baroqueart.sheet.credits') }}</h2>
-        <dl class="credits-list">
-          <template v-for="c in credits" :key="c.label">
-            <dt>{{ c.label }}</dt>
-            <dd :dir="contentDir">{{ c.value }}</dd>
-          </template>
-        </dl>
-        <p v-if="item.mwnf_reference" class="mwnf-ref">
-          {{ $t('baroqueart.sheet.mwnfWorkingNumber') }}: <strong>{{ item.mwnf_reference }}</strong>
-        </p>
-      </div>
+      <RecordCredits
+        :credits="credits"
+        :working-number="item.mwnf_reference ?? ''"
+        :working-number-label="$t('sheet.field.workingNumber')"
+        :citation="citationText"
+      />
 
-      <!-- Citation -->
-      <div v-if="citation" class="citation">
-        <h2 class="credits-heading">{{ $t('baroqueart.sheet.citation') }}</h2>
-        <p class="citation-text">{{ citation }}</p>
-      </div>
-
-      <!-- On display in (Virtual Exhibitions) -->
-      <div v-if="onDisplayInLinks.length" class="on-display-in">
-        <h2 class="sub-section-title">{{ $t('baroqueart.sheet.onDisplayIn') }}</h2>
-        <ul class="gallery-list">
-          <li v-for="l in onDisplayInLinks" :key="l.to.path">
-            <router-link :to="l.to">
-              <span v-html="mdInline(l.label)" />
-            </router-link>
+      <SheetSection v-if="onDisplayInLinks.length" :heading="$t('record.related.onDisplayIn')">
+        <ul class="link-list">
+          <li v-for="(l, i) in onDisplayInLinks" :key="i">
+            <router-link :to="l.to"><span v-html="mdInline(l.label)"></span></router-link>
           </li>
         </ul>
-      </div>
+      </SheetSection>
 
-      <!-- Galleries (THG cross-links) -->
-      <div v-if="thgGalleryLinks.length" class="galleries">
-        <h2 class="sub-section-title">{{ $t('baroqueart.sheet.galleries') }}</h2>
-        <ul class="gallery-list">
-          <li v-for="g in thgGalleryLinks" :key="g.name">
-            <a :href="g.href">{{ g.name }}</a>
-          </li>
+      <SheetSection v-if="thgGalleryLinks.length" :heading="$t('record.related.galleries')">
+        <ul class="link-list">
+          <li v-for="g in thgGalleryLinks" :key="g.name"><a :href="g.href">{{ g.name }}</a></li>
         </ul>
-      </div>
+      </SheetSection>
 
-      <!-- Related items -->
-      <div v-if="relatedItems.length" class="related">
-        <h2 class="sub-section-title">{{ $t('baroqueart.sheet.relatedItems') }}</h2>
-        <ul class="related-list item-list">
-          <li
-            v-for="{ item: rel, justifications } in relatedItems"
-            :key="rel.id"
-            class="item-list-row"
-            @click="$router.push(`/item/${encodeURIComponent(rel.id)}`)"
-          >
-            <div class="item-thumb">
-              <img v-if="rel.images?.length" :src="rel.images[0].url" :alt="labelText(rel)" loading="lazy" />
-              <div v-else class="item-thumb-placeholder" />
-            </div>
-            <div class="item-list-info" :dir="contentDir">
-              <div class="item-list-name" v-html="mdInline(itemText(rel).name ?? rel.internal_name ?? rel.id)" />
-              <div
-                v-if="justifications[activeLang]"
-                class="item-list-justification"
-              >{{ justifications[activeLang] }}</div>
-              <div class="item-list-meta">
-                <span class="item-type-badge">{{ rel.type }}</span>
-              </div>
-            </div>
-          </li>
-        </ul>
-      </div>
+      <RelatedRecords :heading="$t('record.related.items')" :records="relatedRows" variant="list" />
     </div>
 
-    <!-- Glossary term modal, mirrors legacy's glossary1.php popup -->
-    <div v-if="activeGlossaryTerm" class="gloss-modal-overlay" @click.self="closeGlossaryModal">
-      <div class="gloss-modal" :dir="contentDir">
-        <button class="gloss-modal-close" @click="closeGlossaryModal" :aria-label="$t('baroqueart.glossary.close')">✕</button>
-        <h2 class="gloss-modal-heading">{{ $t('baroqueart.glossary.heading') }}</h2>
-        <h3 class="gloss-modal-term">{{ activeGlossaryTerm.spelling }}</h3>
-        <p class="gloss-modal-definition">{{ activeGlossaryTerm.definition }}</p>
-      </div>
-    </div>
+    <GlossaryPopover :term="activeTerm" :html="activeTermHtml" :dir="contentDir" @close="closeGlossary" />
   </div>
 </template>
 
 <style scoped>
-.not-found { color: var(--muted); font-family: 'Roboto', sans-serif; font-size: 13px; }
-
 .detail-wrap { display: flex; flex-direction: column; gap: 10px; }
 
 .detail-type-badge {
@@ -506,109 +292,23 @@ function back() {
   border: 1px solid var(--accent);
   padding: 2px 8px;
   margin-bottom: 10px;
-  font-family: 'Roboto', sans-serif;
-}
-
-.record-languages {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 10px;
-}
-.record-language {
-  font: inherit;
-  font-size: 12px;
-  padding: 2px 8px;
-  cursor: pointer;
-  color: var(--text);
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 3px;
-}
-.record-language--active {
-  color: #fff;
-  background: var(--accent);
-  border-color: var(--accent);
 }
 
 .detail-title {
   font-size: 24px;
   font-weight: 400;
   color: var(--heading);
-  margin-bottom: 16px;
+  margin: 10px 0 16px;
   line-height: 1.3;
-  font-family: 'Roboto', sans-serif;
 }
 
-/* Images */
-.images {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
-}
-.images figure { flex-shrink: 0; }
-.detail-img {
-  width: 180px;
-  height: 140px;
-  object-fit: cover;
-  border: 1px solid var(--border);
-  display: block;
-}
-.images figcaption {
-  font-size: 11px;
-  color: var(--muted);
-  margin-top: 4px;
-  width: 180px;
-  font-family: 'Roboto', sans-serif;
-}
-.photo-credit { display: block; }
+.detail-status { font-size: 12px; color: var(--muted); }
 
-/* Key facts table */
-.key-facts {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 20px;
-  font-size: 14px;
-}
-.key-facts th,
-.key-facts td {
-  padding: 6px 10px;
-  border: 1px solid var(--border);
-  vertical-align: top;
-  text-align: left;
-}
-.key-facts th {
-  background: var(--field-bg);
-  width: 36%;
-  font-weight: 500;
-  color: var(--heading);
-  font-family: 'Roboto', sans-serif;
-  font-size: 13px;
-  white-space: nowrap;
-}
-.key-facts td { color: var(--text); font-family: 'Roboto', sans-serif; }
+.detail :deep(.mwnf-media) { margin-bottom: 20px; }
+.detail :deep(.mwnf-sheet) { margin-bottom: 20px; }
 
-/* Content sections */
-.content-section {
-  margin-bottom: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-}
-.content-section-heading {
-  font-size: 13px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--heading);
-  margin-bottom: 10px;
-  font-family: 'Roboto', sans-serif;
-}
-.content-section.short-description {
-  border-top: none;
-  padding-top: 0;
-  margin-top: -8px;
-}
+/* Short description: legacy's toggle, directly under the description. */
+.short-description { margin-top: -8px; margin-bottom: 20px; }
 .short-description-toggle {
   background: none;
   border: none;
@@ -620,166 +320,20 @@ function back() {
   color: var(--link);
   text-decoration: underline;
   cursor: pointer;
-  font-family: 'Roboto', sans-serif;
+  font-family: inherit;
 }
 
-/* Prose */
-.prose { font-size: 14px; line-height: 1.7; color: var(--text); font-family: 'Roboto', sans-serif; }
-.prose :deep(p) { margin: 0 0 .75em; }
-.prose :deep(p:last-child) { margin-bottom: 0; }
-.prose :deep(em) { font-style: italic; }
-.prose :deep(strong) { font-weight: 700; }
-.prose :deep(ul), .prose :deep(ol) { padding-left: 1.5em; margin: 0 0 .75em; }
-.prose :deep(li) { margin-bottom: .25em; }
-.prose :deep(a) { color: var(--link); text-decoration: underline; }
-
-/* Credits */
-.credits {
-  margin-top: 20px;
-  padding-top: 14px;
-  border-top: 2px solid var(--heading);
-}
-.credits-heading {
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--heading);
-  margin-bottom: 10px;
-  font-family: 'Roboto', sans-serif;
-}
-.credits-list {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: .3rem 1rem;
-  font-size: 12px;
-  margin-bottom: 8px;
-  font-family: 'Roboto', sans-serif;
-}
-.credits-list dt { font-weight: 500; color: var(--muted); }
-.credits-list dd { color: var(--text); }
-.mwnf-ref { font-size: 11px; color: var(--muted); font-family: 'Roboto', sans-serif; }
-
-/* Citation */
-.citation { margin-top: 16px; }
-.citation-text { font-size: 12px; line-height: 1.6; color: var(--muted); font-family: 'Roboto', sans-serif; }
-
-/* Special Features (monument sub-details) */
-.special-features { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; }
+/* Special features */
 .special-feature { margin-bottom: 16px; }
-.special-feature-name { font-size: 15px; font-weight: 500; color: var(--heading); margin-bottom: 4px; font-family: 'Roboto', sans-serif; }
-.special-feature-meta { font-size: 12px; color: var(--muted); margin: 0 0 4px; font-family: 'Roboto', sans-serif; }
+.special-feature-name { font-size: 15px; font-weight: 500; color: var(--heading); margin-bottom: 4px; }
+.special-feature-meta { font-size: 12px; color: var(--muted); margin: 0 0 4px; }
 
-/* Related Video */
-.related-media { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; }
+/* Related media */
 .media-entry { margin-bottom: 10px; }
-.media-title { font-size: 13px; font-weight: 500; color: var(--nav-active); font-family: 'Roboto', sans-serif; }
-.media-description { font-size: 12px; color: var(--muted); margin: 2px 0 0; font-family: 'Roboto', sans-serif; }
+.media-title { font-size: 13px; font-weight: 500; color: var(--nav-active); }
+.media-description { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
 
-/* Galleries (THG cross-links) */
-.galleries { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; }
-.gallery-list { list-style: none; font-size: 13px; font-family: 'Roboto', sans-serif; }
-.gallery-list a { color: var(--nav-active); }
-
-/* Sub-section titles */
-.sub-section-title {
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-  margin-bottom: 10px;
-  font-family: 'Roboto', sans-serif;
-}
-
-/* Related */
-.related { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; }
-.related-list { list-style: none; }
-
-.item-type-badge {
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-size: 10px;
-  color: var(--muted);
-  font-family: 'Roboto', sans-serif;
-}
-.item-list-justification {
-  font-size: 13px;
-  color: var(--muted);
-  font-style: italic;
-  margin: 2px 0 4px;
-  font-family: 'Roboto', sans-serif;
-  line-height: 1.4;
-}
-
-/* Glossary term links, injected as raw HTML into v-html content.
-   Not using var(--link)/a plain border-bottom: --link resolves to the same
-   value as --text (#222) site-wide, and a 1px dotted border-bottom renders
-   as a barely-visible sub-pixel line at this font size — both left the term
-   visually indistinguishable from surrounding text. Underline (which scales
-   with font/DPI correctly, unlike border-bottom) plus a color actually
-   distinct from body text gives real affordance. */
-.detail :deep(.gloss-term) {
-  color: var(--heading);
-  text-decoration: underline dotted;
-  text-decoration-color: var(--accent);
-  text-underline-offset: 2px;
-  cursor: pointer;
-}
-.detail :deep(.gloss-term:hover) {
-  color: var(--accent);
-  text-decoration-style: solid;
-}
-
-/* Glossary modal */
-.gloss-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 40px 16px;
-  z-index: 1000;
-}
-.gloss-modal {
-  position: relative;
-  background: var(--section-bg, #fff);
-  border-top: 4px solid var(--accent);
-  max-width: 480px;
-  width: 100%;
-  padding: 28px 24px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-}
-.gloss-modal-close {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  background: none;
-  border: none;
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-  color: var(--muted);
-}
-.gloss-modal-heading {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  margin-bottom: 12px;
-  font-family: 'Roboto', sans-serif;
-}
-.gloss-modal-term {
-  font-size: 20px;
-  color: var(--heading);
-  margin-bottom: 10px;
-  font-family: 'Roboto', sans-serif;
-}
-.gloss-modal-definition {
-  font-size: 14px;
-  line-height: 1.7;
-  color: var(--text);
-  font-family: 'Roboto', sans-serif;
-}
+/* Link lists */
+.link-list { list-style: none; font-size: 13px; padding: 0; margin: 0; }
+.link-list a { color: var(--nav-active); }
 </style>

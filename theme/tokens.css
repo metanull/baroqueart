@@ -71,6 +71,35 @@
   --mwnf-footer-text-color: #ffffff;
   --mwnf-footer-text-size: 0.75rem;
 
+  /* ---------- Content: the record page ---------- */
+  /* The sheet as the legacy site set it: a bordered table with pale blue
+     label cells, uppercase section headings, a navy rule above the credits. */
+  --mwnf-sheet-text-size: 0.875rem;
+  --mwnf-sheet-label-size: 0.8125rem;
+  --mwnf-sheet-label-weight: 500;
+  --mwnf-sheet-label-color: #12376b;
+  --mwnf-sheet-label-background: #f4f7fa;
+  --mwnf-sheet-cell-border: 1px solid #8fa3ba;
+  --mwnf-sheet-toggle-color: #222222;
+  --mwnf-sheet-term-color: #12376b;
+  --mwnf-sheet-term-underline: #12376b;
+  --mwnf-sheet-section-border: 1px solid #8fa3ba;
+  --mwnf-sheet-heading-size: 0.8125rem;
+  --mwnf-sheet-heading-color: #12376b;
+  --mwnf-credits-border: 2px solid #12376b;
+  --mwnf-credits-color: #5a5a5a;
+  --mwnf-languages-button-border: 1px solid #8fa3ba;
+  --mwnf-languages-active-background: #12376b;
+  --mwnf-languages-active-text: #ffffff;
+  --mwnf-media-background: #e9eef4;
+  --mwnf-media-thumb-active-border: 2px solid #12376b;
+  --mwnf-media-caption-color: #5a5a5a;
+  --mwnf-popover-border: 2px solid #12376b;
+  --mwnf-popover-title-background: #14214e;
+  --mwnf-list-row-border: 1px solid #d4dde7;
+  --mwnf-list-thumb-background: #e9eef4;
+  --mwnf-list-meta-color: #5a5a5a;
+
   /* ---------- Shared views (@metanull/viewer-core) ----------
    * Only the generic entity pages read these; the block goes away when the
    * page stories replace them (features.entities: []). The page shell
