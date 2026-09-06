@@ -100,6 +100,64 @@
   --mwnf-list-thumb-background: #e9eef4;
   --mwnf-list-meta-color: #5a5a5a;
 
+  /* ---------- Content: the lists ---------- */
+  /* Filter panel, facets, summary line and pagination as the legacy site
+     drew them: pale blue controls with the blue-gray border, the active
+     page in deep blue. */
+  --mwnf-filter-padding: 20px;
+  --mwnf-filter-border: 1px solid #8fa3ba;
+  --mwnf-filter-background: #ffffff;
+  --mwnf-filter-title-size: 0.75rem;
+  --mwnf-filter-title-color: #5a5a5a;
+  --mwnf-filter-label-size: 0.75rem;
+  --mwnf-filter-label-color: #5a5a5a;
+  --mwnf-filter-control-border: 1px solid #8fa3ba;
+  --mwnf-filter-control-background: #f4f7fa;
+  --mwnf-filter-control-text: #222222;
+  --mwnf-filter-button-background: #12376b;
+  --mwnf-filter-button-border: none;
+  --mwnf-filter-button-text: #ffffff;
+  --mwnf-filter-reset-background: #8fa3ba;
+  --mwnf-filter-reset-text: #222222;
+  --mwnf-summary-size: 0.75rem;
+  --mwnf-summary-color: #5a5a5a;
+  --mwnf-summary-value-color: #222222;
+  --mwnf-summary-border: 1px solid #8fa3ba;
+  --mwnf-pagination-size: 0.75rem;
+  --mwnf-pagination-button-border: 1px solid #8fa3ba;
+  --mwnf-pagination-button-background: #ffffff;
+  --mwnf-pagination-button-text: #222222;
+  --mwnf-pagination-button-hover-background: #f4f7fa;
+  --mwnf-pagination-active-background: #12376b;
+  --mwnf-pagination-active-text: #ffffff;
+  --mwnf-pagination-position-color: #5a5a5a;
+
+  /* ---------- Content: the landing page ---------- */
+  /* Section cards and the item on display as the legacy site drew them:
+     white boxes with the blue rule on top, the verb in deep blue. */
+  --mwnf-card-columns: 3;
+  --mwnf-card-gap: 16px;
+  --mwnf-card-padding: 20px;
+  --mwnf-card-background: #ffffff;
+  --mwnf-card-border: 1px solid #8fa3ba;
+  --mwnf-card-radius: 0;
+  --mwnf-card-title-size: 1rem;
+  --mwnf-card-title-color: #12376b;
+  --mwnf-card-text-size: 0.8125rem;
+  --mwnf-card-text-color: #5a5a5a;
+  --mwnf-card-action-color: #12376b;
+  --mwnf-card-action-weight: 500;
+  --mwnf-featured-heading-size: 1.125rem;
+  --mwnf-featured-heading-color: #12376b;
+  --mwnf-featured-image-width: 200px;
+  --mwnf-featured-image-height: 160px;
+  --mwnf-featured-image-border: 1px solid #8fa3ba;
+  --mwnf-featured-eyebrow-size: 0.625rem;
+  --mwnf-featured-name-size: 1.125rem;
+  --mwnf-featured-name-color: #12376b;
+  --mwnf-featured-meta-size: 0.8125rem;
+  --mwnf-featured-meta-color: #5a5a5a;
+
   /* ---------- Shared views (@metanull/viewer-core) ----------
    * Only the generic entity pages read these; the block goes away when the
    * page stories replace them (features.entities: []). The page shell
