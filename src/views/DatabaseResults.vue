@@ -1,365 +1,145 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useI18n } from '@metanull/viewer-core'
+import { computed, ref, watch } from 'vue'
+import { dateRange, useI18n, useKeywordIndex, useListQuery, usePagination } from '@metanull/viewer-core'
+import { FilterPanel, Pagination, RecordList, ResultsSummary } from '@metanull/viewer-layout/content'
 import { useInventoryData } from '../composables/useInventoryData.js'
+import { DATE_MODE, PAGE_SIZE, SEARCH_FIELDS, useSearchFields } from '../composables/catalogue.js'
 
-const route = useRoute()
-const router = useRouter()
+// The database results: the query in the URL, read by viewer-core; the eight
+// fields and the AND/OR fold of database.php, run by viewer-core's field
+// grammar over this website's field map; the rows, the pages and the summary
+// drawn by viewer-layout. What is this page's is the order of things and
+// the refine row legacy offered under the summary.
+
 const { t } = useI18n()
-const {
-  items,
-  itemLabel, countryLabel,
-  defaultLang, mdInline,
-  loadTranslations, tr, translations,
-} = useInventoryData()
+const { countryLabel, itemLabel, loadTranslations, mdInline, tr } = useInventoryData()
+const fieldOptions = useSearchFields()
 
-const PAGE_SIZE = 20
-
-// ── Parse query params ────────────────────────────────────────────────
-
-function parseQuery(q) {
-  return {
-    keyword1: q.keyword1 ?? '',
-    field1:   q.field1   ?? 'keyword',
-    keyword2: q.keyword2 ?? '',
-    field2:   q.field2   ?? 'keyword',
-    cond2:    q.cond2    ?? 'AND',
-    keyword3: q.keyword3 ?? '',
-    field3:   q.field3   ?? 'keyword',
-    cond3:    q.cond3    ?? 'AND',
-    // Date range and search language apply once, globally, to the whole
-    // query — unlike field1/field2/field3, which are genuinely per-row.
-    dateFrom: q.date_from ?? '',
-    dateTo:   q.date_to   ?? '',
-    lang:     q.lang      ?? '',
-    page:     parseInt(q.page ?? '1', 10) || 1,
-    // refine row
-    keyword4: q.keyword4 ?? '',
-    field4:   q.field4   ?? 'keyword',
-    cond4:    q.cond4    ?? 'AND',
-  }
-}
-
-const search = ref(parseQuery(route.query))
-const currentPage = ref(search.value.page)
-
-watch(() => route.query, q => {
-  search.value = parseQuery(q)
-  currentPage.value = search.value.page
+// keyword1..3 and their fields come from the search form; keyword4 is the
+// refine row; date_from/date_to and lang apply once to the whole query.
+const { filters, page, apply, goToPage } = useListQuery({
+  keys: [
+    'keyword1', 'field1', 'keyword2', 'field2', 'cond2', 'keyword3', 'field3', 'cond3',
+    'keyword4', 'field4', 'cond4', 'date_from', 'date_to', 'lang',
+  ],
 })
 
-watch(() => search.value.lang, lang => {
-  if (lang) loadTranslations('items', lang)
-}, { immediate: true })
+// The search language's translations, loaded when it is chosen; English is
+// always there and is what the index falls back to.
+watch(() => filters.lang, (lang) => { if (lang) loadTranslations('items', lang) }, { immediate: true })
 
-// Translations to search against for the currently-selected search language
-// (falls back to English when no language is chosen).
-function translationsFor(lang) {
-  return translations('items', lang || defaultLang)
-}
+const index = useKeywordIndex('items', { grammar: 'fields', fields: SEARCH_FIELDS, language: () => filters.lang })
 
-// ── Refine row ────────────────────────────────────────────────────────
+const keywordRows = computed(() =>
+  [1, 2, 3, 4].map((n) => ({
+    keyword: filters[`keyword${n}`],
+    field: filters[`field${n}`] || 'keyword',
+    cond: n === 1 ? 'AND' : filters[`cond${n}`] || 'AND',
+  })),
+)
 
-const refineKeyword = ref('')
-const refineField   = ref('keyword')
-const refineCond    = ref('AND')
-const showRefine    = ref(false)
+const results = computed(() =>
+  dateRange(index.search(keywordRows.value), { begin: filters.date_from, end: filters.date_to, mode: DATE_MODE }),
+)
 
-// The same fields Database.vue offers; `value` is the query parameter and
-// never a text, so only `label` is looked up — each name written out, because
-// the check that every name resolves can only see the ones it can read.
-const FIELD_OPTIONS = computed(() => [
-  { value: 'keyword',    label: t('baroqueart.field.keywords') },
-  { value: 'name',       label: t('baroqueart.field.name') },
-  { value: 'location',   label: t('baroqueart.field.location') },
-  { value: 'provenance', label: t('baroqueart.field.provenance') },
-  { value: 'patron',     label: t('baroqueart.field.patron') },
-  { value: 'artist',     label: t('baroqueart.field.artist') },
-  { value: 'material',   label: t('baroqueart.field.material') },
-  { value: 'other',      label: t('baroqueart.field.other') },
-])
+const pageInfo = usePagination(results, { page, size: PAGE_SIZE })
 
-function fieldLabel(val) {
-  return FIELD_OPTIONS.value.find(f => f.value === val)?.label ?? val
-}
-
-function applyRefine() {
-  if (!refineKeyword.value.trim()) return
-  const q = {
-    ...route.query,
-    keyword4: refineKeyword.value,
-    field4:   refineField.value,
-    cond4:    refineCond.value,
-  }
-  delete q.page
-  router.push({ path: '/database/results', query: q })
-  showRefine.value = false
-}
-
-// ── Keyword matching ─────────────────────────────────────────────────
-
-function matchField(item, field, keyword, tr) {
-  if (!keyword) return true
-  const kw = keyword.toLowerCase().trim()
-  if (!kw) return true
-
-  switch (field) {
-    case 'keyword':
-      // General full-text search, legacy's "Keyword(s)" option.
-      return (tr.name ?? item.internal_name ?? '').toLowerCase().includes(kw) ||
-             (tr.alternate_name ?? '').toLowerCase().includes(kw) ||
-             (tr.description ?? '').toLowerCase().includes(kw) ||
-             item.tags.some(tag => tag.toLowerCase().includes(kw))
-    case 'name':
-      // Legacy's distinct "Name" option — the name field specifically.
-      return (tr.name ?? item.internal_name ?? '').toLowerCase().includes(kw)
-    case 'location':
-      return (tr.location ?? '').toLowerCase().includes(kw)
-    case 'provenance':
-      return (tr.provenance ?? '').toLowerCase().includes(kw)
-    case 'patron':
-      return (tr.patrons ?? tr.initial_owner ?? '').toLowerCase().includes(kw)
-    case 'artist':
-      return (item.artist_names ?? []).join(' ').toLowerCase().includes(kw) ||
-             (tr.architects ?? '').toLowerCase().includes(kw)
-    case 'material':
-      return (tr.type ?? '').toLowerCase().includes(kw)
-    case 'other':
-      // Catch-all across descriptive fields not covered by the other 8
-      // categories (see Open Product Question 5 in the parity backlog).
-      return [
-        tr.description, tr.method_for_datation, tr.method_for_provenance,
-        tr.obtention, tr.bibliography, tr.workshop, tr.scriber,
-        tr.binding_desc, tr.history,
-      ].filter(Boolean).join(' ').toLowerCase().includes(kw)
-    default:
-      return (tr.name ?? item.internal_name ?? '').toLowerCase().includes(kw)
-  }
-}
-
-function itemMatches(item, s) {
-  const noSearch = !s.keyword1 && !s.keyword2 && !s.keyword3 && !s.keyword4
-
-  // Date filter (always applied)
-  if (s.dateFrom) {
-    const begin = parseInt(s.dateFrom, 10)
-    if (!isNaN(begin)) {
-      const ok = item.end_date !== null ? item.end_date >= begin
-               : item.start_date !== null ? item.start_date >= begin
-               : true
-      if (!ok) return false
+const rows = computed(() =>
+  pageInfo.value.rows.map((item) => {
+    const text = tr('items', item.id)
+    return {
+      id: item.id,
+      image: item.images?.[0]?.url ?? '',
+      imageAlt: itemLabel(item),
+      name: mdInline(text.name ?? item.internal_name ?? item.id),
+      meta: [countryLabel(item.country_id), text.dates, text.location].filter(Boolean),
+      badge: item.type,
+      to: { name: 'item', params: { id: item.id } },
     }
-  }
-  if (s.dateTo) {
-    const end = parseInt(s.dateTo, 10)
-    if (!isNaN(end)) {
-      const ok = item.start_date !== null ? item.start_date <= end
-               : item.end_date !== null   ? item.end_date <= end
-               : true
-      if (!ok) return false
-    }
-  }
+  }),
+)
 
-  if (noSearch) return true
+// ── The summary of what was searched ───────────────────────────────────────
 
-  // Search language applies once, globally, to the whole query.
-  const tr = translationsFor(s.lang)[item.id] ?? {}
-
-  // Keyword rows combined
-  let result = null
-
-  function combine(current, next, cond) {
-    if (current === null) return next
-    if (cond === 'OR') return current || next
-    return current && next
-  }
-
-  if (s.keyword1) {
-    result = combine(result, matchField(item, s.field1, s.keyword1, tr), 'AND')
-  }
-  if (s.keyword2) {
-    result = combine(result, matchField(item, s.field2, s.keyword2, tr), s.cond2)
-  }
-  if (s.keyword3) {
-    result = combine(result, matchField(item, s.field3, s.keyword3, tr), s.cond3)
-  }
-  if (s.keyword4) {
-    result = combine(result, matchField(item, s.field4, s.keyword4, tr), s.cond4)
-  }
-
-  return result === null ? true : result
+function fieldLabel(value) {
+  return fieldOptions.value.find((f) => f.value === value)?.label ?? value
 }
 
-// ── Filtered results ──────────────────────────────────────────────────
-
-const filteredItems = computed(() => {
-  const s = search.value
-  return items.value.filter(item => itemMatches(item, s))
-})
-
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredItems.value.length / PAGE_SIZE)))
-
-const pagedItems = computed(() => {
-  const start = (currentPage.value - 1) * PAGE_SIZE
-  return filteredItems.value.slice(start, start + PAGE_SIZE)
-})
-
-function goToPage(n) {
-  currentPage.value = n
-  const q = { ...route.query, page: String(n) }
-  if (n === 1) delete q.page
-  router.replace({ path: '/database/results', query: q })
-}
-
-// ── Active search summary ────────────────────────────────────────────
-
-const searchSummary = computed(() => {
-  const s = search.value
-  const parts = []
-  if (s.keyword1) parts.push(`${fieldLabel(s.field1)}: "${s.keyword1}"`)
-  if (s.keyword2) parts.push(`${s.cond2} ${fieldLabel(s.field2)}: "${s.keyword2}"`)
-  if (s.keyword3) parts.push(`${s.cond3} ${fieldLabel(s.field3)}: "${s.keyword3}"`)
-  if (s.keyword4) parts.push(`${s.cond4} ${fieldLabel(s.field4)}: "${s.keyword4}"`)
-  if (s.dateFrom) parts.push(`${t('baroqueart.filter.from')} ${s.dateFrom}`)
-  if (s.dateTo)   parts.push(`${t('baroqueart.filter.to')} ${s.dateTo}`)
-  if (s.lang)     parts.push(`${t('baroqueart.search.language')}: ${s.lang.toUpperCase()}`)
+const searchedFor = computed(() => {
+  const parts = keywordRows.value
+    .filter((row) => row.keyword)
+    .map((row, i) => `${i > 0 ? `${row.cond} ` : ''}${fieldLabel(row.field)}: "${row.keyword}"`)
+  if (filters.date_from) parts.push(`${t('catalogue.filter.from')} ${filters.date_from}`)
+  if (filters.date_to) parts.push(`${t('catalogue.filter.to')} ${filters.date_to}`)
+  if (filters.lang) parts.push(`${t('catalogue.search.language')}: ${filters.lang.toUpperCase()}`)
   return parts
 })
+
+const summary = computed(() => [
+  { label: t('catalogue.search.summary'), value: searchedFor.value.length ? searchedFor.value.join(' · ') : t('catalogue.results.allItems') },
+  { label: t('catalogue.results.itemsFound'), count: pageInfo.value.total },
+])
+
+// ── The refine row ─────────────────────────────────────────────────────────
+
+const showRefine = ref(false)
+const refine = ref({ keyword: '', field: 'keyword', cond: 'AND' })
+
+function applyRefine() {
+  if (!refine.value.keyword.trim()) return
+  apply({ keyword4: refine.value.keyword, field4: refine.value.field, cond4: refine.value.cond })
+  showRefine.value = false
+}
 </script>
 
 <template>
   <div>
-    <h1 class="section-heading">{{ $t('baroqueart.results.databaseHeading') }}</h1>
+    <h1 class="section-heading">{{ $t('baroqueart.nav.database') }} — {{ $t('catalogue.results.heading') }}</h1>
 
-    <!-- Search summary -->
-    <div class="content-box search-summary">
-      <span class="summary-label">{{ $t('baroqueart.results.searchLabel') }}</span>
-      <template v-if="searchSummary.length">
-        <span v-for="(part, i) in searchSummary" :key="i" class="summary-part">{{ part }}</span>
-      </template>
-      <span v-else class="summary-part muted">{{ $t('baroqueart.results.allItems') }}</span>
-
-      <div class="summary-actions">
-        <router-link to="/database" class="btn btn-secondary" style="font-size:12px; padding:4px 12px; text-decoration:none">
-          {{ $t('baroqueart.action.newSearch') }}
-        </router-link>
-        <button
-          class="btn"
-          style="margin-left:8px; font-size:12px; padding:4px 12px"
-          @click="showRefine = !showRefine"
-        >
-          {{ $t('baroqueart.action.refine') }}
-        </button>
-      </div>
-    </div>
-
-    <!-- Refine panel -->
-    <div v-if="showRefine" class="content-box refine-panel">
-      <strong class="filter-label">{{ $t('baroqueart.results.refineHint') }}</strong>
-      <div class="refine-row">
-        <select v-model="refineCond" style="width:60px">
-          <option value="AND">{{ $t('baroqueart.search.and') }}</option>
-          <option value="OR">{{ $t('baroqueart.search.or') }}</option>
-        </select>
-        <select v-model="refineField" style="width:200px; margin-left:8px">
-          <option v-for="f in FIELD_OPTIONS" :key="f.value" :value="f.value">{{ f.label }}</option>
-        </select>
-        <input type="text" v-model="refineKeyword" :placeholder="$t('baroqueart.search.keywordPlaceholder')" style="width:200px; margin-left:8px" @keyup.enter="applyRefine" />
-        <button class="btn" style="margin-left:10px" @click="applyRefine">{{ $t('baroqueart.action.add') }}</button>
-      </div>
-    </div>
-
-    <!-- Results -->
     <div class="content-box">
-      <!-- The count is rendered beside its text, never inside it: a text carries
-           no placeholder, and no plural form is chosen for the translator. -->
-      <p class="result-count">
-        {{ $t('baroqueart.results.itemsFound') }}: {{ filteredItems.length }}
-      </p>
-
-      <ul v-if="pagedItems.length" class="item-list">
-        <li
-          v-for="item in pagedItems"
-          :key="item.id"
-          class="item-list-row"
-          @click="$router.push(`/item/${encodeURIComponent(item.id)}`)"
-        >
-          <div class="item-thumb">
-            <img v-if="item.images?.length" :src="item.images[0].url" :alt="itemLabel(item)" loading="lazy" />
-            <div v-else class="item-thumb-placeholder" />
-          </div>
-          <div class="item-list-info">
-            <div class="item-list-name" v-html="mdInline(tr('items', item.id)?.name ?? item.internal_name ?? item.id)" />
-            <div class="item-list-meta">
-              <span v-if="item.country_id">{{ countryLabel(item.country_id) }}</span>
-              <span v-if="tr('items', item.id)?.dates">{{ tr('items', item.id).dates }}</span>
-              <span v-if="tr('items', item.id)?.location">{{ tr('items', item.id).location }}</span>
-              <span class="item-type-badge">{{ item.type }}</span>
-            </div>
-          </div>
-        </li>
-      </ul>
-
-      <p v-else class="no-results">
-        {{ $t('baroqueart.results.noItems') }}
-        <router-link to="/database">{{ $t('baroqueart.action.tryNewSearch') }}</router-link>
-      </p>
-
-      <!-- Pagination -->
-      <div v-if="totalPages > 1" class="pagination">
-        <span class="pagination-info">{{ currentPage }} / {{ totalPages }}</span>
-        <button class="page-btn" :disabled="currentPage === 1" @click="goToPage(currentPage - 1)">‹ {{ $t('core.pagination.previous') }}</button>
-        <template v-for="p in totalPages" :key="p">
-          <button
-            v-if="Math.abs(p - currentPage) <= 3 || p === 1 || p === totalPages"
-            class="page-btn"
-            :class="{ active: p === currentPage }"
-            @click="goToPage(p)"
-          >{{ p }}</button>
-          <span v-else-if="Math.abs(p - currentPage) === 4" class="page-ellipsis">…</span>
+      <ResultsSummary :parts="summary">
+        <template #actions>
+          <RouterLink :to="{ name: 'database' }" class="btn btn-secondary small">{{ $t('catalogue.search.newSearch') }}</RouterLink>
+          <button type="button" class="btn small" @click="showRefine = !showRefine">{{ $t('catalogue.search.refine') }}</button>
         </template>
-        <button class="page-btn" :disabled="currentPage === totalPages" @click="goToPage(currentPage + 1)">{{ $t('core.pagination.next') }} ›</button>
-      </div>
+      </ResultsSummary>
+
+      <FilterPanel
+        v-if="showRefine"
+        class="refine"
+        :title="$t('catalogue.search.refineHint')"
+        :apply-label="$t('core.action.add')"
+        :reset-label="$t('core.action.close')"
+        @apply="applyRefine"
+        @reset="showRefine = false"
+      >
+        <select v-model="refine.cond" class="cond">
+          <option value="AND">{{ $t('catalogue.search.and') }}</option>
+          <option value="OR">{{ $t('catalogue.search.or') }}</option>
+        </select>
+        <select v-model="refine.field" class="field">
+          <option v-for="f in fieldOptions" :key="f.value" :value="f.value">{{ f.label }}</option>
+        </select>
+        <input v-model="refine.keyword" type="text" class="keyword" :placeholder="$t('catalogue.search.keywordPlaceholder')" />
+      </FilterPanel>
+
+      <RecordList :records="rows">
+        <template #empty>
+          {{ $t('catalogue.results.noResultsSearch') }}
+          <RouterLink :to="{ name: 'database' }">{{ $t('catalogue.search.tryNewSearch') }}</RouterLink>
+        </template>
+      </RecordList>
+
+      <Pagination :page-info="pageInfo" :window="7" @navigate="goToPage" />
     </div>
   </div>
 </template>
 
 <style scoped>
-.search-summary {
-  display: flex;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  gap: 6px;
-  font-family: 'Roboto', sans-serif;
-  font-size: 12px;
-}
-.summary-label { font-weight: bold; color: var(--muted); }
-.summary-part { color: var(--text); }
-.summary-part.muted { color: var(--muted); }
-.summary-actions { margin-left: auto; display: flex; align-items: center; }
-
-.refine-panel { display: flex; flex-direction: column; gap: 10px; }
-.filter-label { font-family: 'Roboto', sans-serif; font-size: 12px; font-weight: bold; color: var(--muted); }
-.refine-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0; }
-
-.result-count {
-  font-family: 'Roboto', sans-serif;
-  font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-}
-
-.no-results { color: var(--muted); font-family: 'Roboto', sans-serif; font-size: 13px; padding: 20px 0; }
-
-.item-type-badge {
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-size: 10px;
-  color: #888;
-}
-
-.page-ellipsis { padding: 4px; color: var(--muted); font-family: 'Roboto', sans-serif; font-size: 12px; }
+.btn.small { font-size: 12px; padding: 4px 12px; text-decoration: none; }
+.btn.small + .btn.small { margin-left: 8px; }
+.refine { margin: 12px 0; }
+.cond { width: 60px; }
+.field { width: 200px; }
+.keyword { width: 200px; }
 </style>
