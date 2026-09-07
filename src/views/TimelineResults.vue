@@ -1,276 +1,36 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useI18n, usePagination } from '@metanull/viewer-core'
-import { Pagination } from '@metanull/viewer-layout/content'
+import { useI18n } from '@metanull/viewer-core'
+import { TimelineResultsView } from '@metanull/viewer-layout/views'
+import { timelineResults } from '../composables/timeline.js'
 import { useInventoryData } from '../composables/useInventoryData.js'
 
-const route = useRoute()
-const router = useRouter()
 const { t } = useI18n()
-const {
-  countryLabel,
-  md,
-  timelineEvents,
-  timelines,
-  tr,
-} = useInventoryData()
+const { countryLabel } = useInventoryData()
 
-const PAGE_SIZE = 15
-
-// ── Filter state (synced with URL query) ────────────────────────────────
-
-const filterCountry = ref(route.query.country ?? '')
-const filterBegin   = ref(route.query.begin   ?? '')
-const filterEnd     = ref(route.query.end     ?? '')
-const currentPage    = ref(parseInt(route.query.page ?? '1', 10) || 1)
-
-watch(
-  [filterCountry, filterBegin, filterEnd],
-  () => { currentPage.value = 1 }
-)
-
-watch(
-  () => route.query,
-  q => {
-    filterCountry.value = q.country ?? ''
-    filterBegin.value   = q.begin   ?? ''
-    filterEnd.value     = q.end     ?? ''
-    currentPage.value   = parseInt(q.page ?? '1', 10) || 1
-  }
-)
-
-function applyFilters() {
-  const q = {}
-  if (filterCountry.value) q.country = filterCountry.value
-  if (filterBegin.value)   q.begin   = filterBegin.value
-  if (filterEnd.value)     q.end     = filterEnd.value
-  router.push({ path: '/timeline/results', query: q })
-}
-
-function resetFilters() {
-  filterCountry.value = ''
-  filterBegin.value = ''
-  filterEnd.value = ''
-  applyFilters()
-}
-
-// ── Available countries (from timeline data) ────────────────────────────
-
-const availableCountries = computed(() =>
-  timelines.value
-    .filter(t => t.country_id)
-    .map(t => ({ id: t.country_id, name: countryLabel(t.country_id) }))
-    .sort((a, b) => a.name.localeCompare(b.name))
-)
-
-// ── Filtered + sorted events ─────────────────────────────────────────────
-
-// event.year_to === 0 mirrors the legacy convention for an open-ended period.
-function effectiveYearTo(event) {
-  return event.year_to && event.year_to !== 0 ? event.year_to : null
-}
-
-function overlapsRange(event, begin, end) {
-  const yf = event.year_from
-  const yt = effectiveYearTo(event)
-
-  if (begin != null && end != null) {
-    return yt !== null ? (yt > begin && yf < end) : (yf > begin && yf < end)
-  }
-  if (begin != null) {
-    return yt !== null ? yt > begin : yf > begin
-  }
-  if (end != null) {
-    return yf <= end
-  }
-  return true
-}
-
-const filteredEvents = computed(() => {
-  let result = timelineEvents.value
-
-  if (filterCountry.value) {
-    result = result.filter(e => e.country_id === filterCountry.value)
-  }
-
-  const begin = filterBegin.value ? parseInt(filterBegin.value, 10) : null
-  const end = filterEnd.value ? parseInt(filterEnd.value, 10) : null
-  if (begin != null || end != null) {
-    result = result.filter(e => overlapsRange(e, begin, end))
-  }
-
-  return [...result].sort((a, b) => a.year_from - b.year_from)
-})
-
-const pageInfo = usePagination(filteredEvents, { page: currentPage, size: PAGE_SIZE })
-const pagedEvents = computed(() => pageInfo.value.rows)
-
-function goToPage(n) {
-  currentPage.value = n
-  const q = { ...route.query, page: String(n) }
-  if (n === 1) delete q.page
-  router.replace({ path: '/timeline/results', query: q })
-}
-
-// ── Display helpers ──────────────────────────────────────────────────────
-
-function dateRangeLabel(event) {
-  const t = tr('timeline_events', event.id)
-  if (t?.date_from_description) {
-    return t.date_to_description
-      ? `${t.date_from_description} – ${t.date_to_description}`
-      : t.date_from_description
-  }
-  const yt = effectiveYearTo(event)
-  return yt !== null ? `${event.year_from} – ${yt} AD` : `${event.year_from} AD –`
-}
-
-function itemsLink(event) {
-  const q = { country: event.country_id, begin: String(event.year_from) }
-  const yt = effectiveYearTo(event)
-  q.end = String(yt !== null ? yt : event.year_from)
-  return { path: '/permanent-collection/results', query: q }
-}
-
-// null when nothing is filtered: the heading's suffix depends on there being a
-// filter, not on a comparison against a text that changes with the language.
-const activeFilterLabel = computed(() => {
+// The active-filter suffix on the heading, unchanged from before this view
+// moved onto the spec: null when nothing is filtered, so the heading never
+// carries a stray dash.
+function filterLabel(filters) {
   const parts = []
-  if (filterCountry.value) parts.push(countryLabel(filterCountry.value))
-  if (filterBegin.value) parts.push(`${t('catalogue.filter.from')} ${filterBegin.value}`)
-  if (filterEnd.value) parts.push(`${t('catalogue.filter.to')} ${filterEnd.value}`)
+  if (filters.country) parts.push(countryLabel(filters.country))
+  if (filters.begin) parts.push(`${t('catalogue.filter.from')} ${filters.begin}`)
+  if (filters.end) parts.push(`${t('catalogue.filter.to')} ${filters.end}`)
   return parts.length ? parts.join(' — ') : null
-})
+}
 </script>
 
 <template>
-  <div>
-    <RouterLink to="/timeline" class="back-link">‹ {{ $t('timeline.nav.backLink') }}</RouterLink>
-
-    <h1 class="section-heading">
-      {{ $t('baroqueart.nav.timeline') }}
-      <span v-if="activeFilterLabel" class="heading-filter"> — {{ activeFilterLabel }}</span>
-    </h1>
-
-    <!-- Filter panel -->
-    <div class="content-box filter-panel">
-      <strong class="filter-label">{{ $t('catalogue.filter.heading') }}</strong>
-
-      <div class="filter-row">
-        <label>{{ $t('catalogue.facet.country') }}</label>
-        <select v-model="filterCountry" style="width:200px">
-          <option value="">{{ $t('catalogue.facet.any') }}</option>
-          <option v-for="c in availableCountries" :key="c.id" :value="c.id">{{ c.name }}</option>
-        </select>
-      </div>
-
-      <div class="filter-row">
-        <label>{{ $t('catalogue.facet.fromYear') }}</label>
-        <input type="number" v-model="filterBegin" :placeholder="$t('timeline.form.fromYearHint')" style="width:100px" />
-      </div>
-
-      <div class="filter-row">
-        <label>{{ $t('catalogue.facet.toYear') }}</label>
-        <input type="number" v-model="filterEnd" :placeholder="$t('timeline.form.toYearHint')" style="width:100px" />
-      </div>
-
-      <div class="filter-actions">
-        <button class="btn" @click="applyFilters">{{ $t('core.action.apply') }}</button>
-        <button class="btn btn-secondary" style="margin-left:8px" @click="resetFilters">{{ $t('core.action.reset') }}</button>
-      </div>
-    </div>
-
-    <!-- Results -->
-    <div class="content-box">
-      <p class="result-count">
-        {{ $t('timeline.results.eventsFound') }}: {{ filteredEvents.length }}
-      </p>
-
-      <ul v-if="pagedEvents.length" class="timeline-list">
-        <li v-for="event in pagedEvents" :key="event.id" class="timeline-row">
-          <div class="timeline-date">{{ dateRangeLabel(event) }}</div>
-          <div class="timeline-body">
-            <div class="timeline-country">{{ countryLabel(event.country_id) }}</div>
-            <div
-              class="timeline-description"
-              v-html="md(tr('timeline_events', event.id)?.description ?? '')"
-            />
-            <RouterLink :to="itemsLink(event)" class="timeline-items-link">
-              {{ $t('timeline.action.viewItemsFromPeriod') }} →
-            </RouterLink>
-          </div>
-        </li>
-      </ul>
-
-      <p v-else class="no-results">{{ $t('timeline.results.noEvents') }}</p>
-
-      <Pagination :page-info="pageInfo" :window="7" @navigate="goToPage" />
-    </div>
-  </div>
+  <TimelineResultsView :spec="timelineResults">
+    <template #before="{ filters }">
+      <RouterLink to="/timeline" class="back-link">‹ {{ $t('timeline.nav.backLink') }}</RouterLink>
+      <h1 class="section-heading">
+        {{ $t('baroqueart.nav.timeline') }}
+        <span v-if="filterLabel(filters)" class="heading-filter"> — {{ filterLabel(filters) }}</span>
+      </h1>
+    </template>
+  </TimelineResultsView>
 </template>
 
 <style scoped>
 .heading-filter { font-weight: normal; font-size: 14px; color: var(--muted); }
-
-.filter-panel { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
-.filter-label { font-family: 'Roboto', sans-serif; font-size: 12px; font-weight: bold; color: var(--muted); }
-.filter-row { display: flex; align-items: center; gap: 6px; font-family: 'Roboto', sans-serif; font-size: 12px; color: var(--muted); }
-.filter-actions { margin-left: auto; }
-
-.result-count {
-  font-family: 'Roboto', sans-serif;
-  font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-}
-
-.no-results { color: var(--muted); font-family: 'Roboto', sans-serif; font-size: 13px; padding: 20px 0; }
-
-.timeline-list { list-style: none; }
-.timeline-row {
-  display: flex;
-  gap: 16px;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--border-light);
-}
-.timeline-row:last-child { border-bottom: none; }
-
-.timeline-date {
-  flex-shrink: 0;
-  width: 140px;
-  font-family: 'Roboto', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--heading);
-}
-
-.timeline-body { flex: 1; min-width: 0; }
-.timeline-country {
-  font-family: 'Roboto', sans-serif;
-  font-size: 12px;
-  font-weight: bold;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-  margin-bottom: 4px;
-}
-.timeline-description {
-  font-family: 'Roboto', sans-serif;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--text);
-}
-.timeline-description :deep(p) { margin-bottom: 6px; }
-.timeline-items-link {
-  display: inline-block;
-  margin-top: 6px;
-  font-family: 'Roboto', sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--nav-active);
-}
-
 </style>
