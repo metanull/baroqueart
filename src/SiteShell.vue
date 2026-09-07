@@ -3,7 +3,7 @@
 // over "Baroque Art") supplied through the header slot. All other PageShell
 // props and the update:language event pass through untouched via $attrs.
 import { computed } from 'vue'
-import { useI18n } from '@metanull/viewer-core'
+import { useI18n, useSection } from '@metanull/viewer-core'
 import { PageShell } from '@metanull/viewer-layout'
 
 const { t } = useI18n()
@@ -15,14 +15,17 @@ const { t } = useI18n()
 // the offered languages — and PageShell receives these links after $attrs, so
 // they take precedence over anything the config still passes.
 // The legacy site's own top-level sections, in its own order — this site has no
-// Dynasties or Artistic Introduction.
+// Dynasties or Artistic Introduction. Which entry is active is the section the
+// route declares (`meta.section`), read through viewer-core's `useSection()`
+// — never derived from the path.
+const section = useSection()
 const navLinks = computed(() => [
-  { label: t('core.nav.home'), href: '#/' },
-  { label: t('baroqueart.nav.permanentCollection'), href: '#/permanent-collection' },
-  { label: t('baroqueart.nav.database'), href: '#/database' },
-  { label: t('baroqueart.nav.timeline'), href: '#/timeline' },
-  { label: t('baroqueart.nav.partners'), href: '#/partners' },
-  { label: t('baroqueart.nav.exhibitions'), href: '#/exhibitions' },
+  { label: t('core.nav.home'), href: '#/', active: section.value === 'home' },
+  { label: t('baroqueart.nav.permanentCollection'), href: '#/permanent-collection', active: section.value === 'permanent-collection' },
+  { label: t('baroqueart.nav.database'), href: '#/database', active: section.value === 'database' },
+  { label: t('baroqueart.nav.timeline'), href: '#/timeline', active: section.value === 'timeline' },
+  { label: t('baroqueart.nav.partners'), href: '#/partners', active: section.value === 'partners' },
+  { label: t('baroqueart.nav.exhibitions'), href: '#/exhibitions', active: section.value === 'exhibitions' },
 ])
 </script>
 
