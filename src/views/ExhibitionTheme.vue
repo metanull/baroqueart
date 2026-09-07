@@ -46,14 +46,20 @@ const hasIntroduction = computed(() => {
 // after skipping past the very first page's own predecessor is the true
 // head of the exhibition, where the `navigation` slot below links back to
 // the introduction instead, same as legacy has no "previous" there either.
+// A page is a node whose parent's parent is the tree's own root — not a
+// node with a two-long `tree.parents()` chain: `parents()` walks the true
+// `parent_id` ancestry past this tree's root by design (the exhibitions
+// marker, the project collection above it), so a page's chain is always
+// longer than two and that test skipped every candidate.
+const isPage = (node) => tree.byId.value.get(node.parent_id)?.parent_id === tree.root.value?.id
 function previousPage(id) {
   let node = tree.previous(id)
-  while (node && tree.parents(node.id).length !== 2) node = tree.previous(node.id)
+  while (node && !isPage(node)) node = tree.previous(node.id)
   return node
 }
 function nextPage(id) {
   let node = tree.next(id)
-  while (node && tree.parents(node.id).length !== 2) node = tree.next(node.id)
+  while (node && !isPage(node)) node = tree.next(node.id)
   return node
 }
 </script>

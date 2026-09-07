@@ -57,23 +57,32 @@ function detailMetaFields(caption) {
 
 // A node's own route, for the breadcrumb (`spec.breadcrumb: true` below)
 // and for `navigation: 'tree'`'s previous/next, both of which can hand this
-// any depth: the exhibition itself (`parents.length === 0`, the breadcrumb's
-// own first crumb), a theme (`=== 1` — reached only by crossing a branch
-// boundary in the tree, since a theme carries no text or items of its own
-// to route to directly; this lands on its first page instead, same as a
-// visitor arriving from the splash list), or a page (`=== 2`, its own
-// address, plus `?tab` unless it is the theme's first page).
+// any depth: the exhibition itself (the tree's own root), one of its themes
+// (reached only by crossing a branch boundary in the tree, since a theme
+// carries no text or items of its own to route to directly; this lands on
+// its first page instead, same as a visitor arriving from the splash list),
+// or one of a theme's pages (its own address, plus `?tab` unless it is the
+// theme's first page). Depth is read structurally — is the node the root,
+// is its parent the root, is its parent's parent the root — never from the
+// length of `tree.parents()`, which walks the true ancestry past this
+// tree's own root (the exhibitions marker, the project collection above it)
+// and so does not measure a node's depth within it.
 export function themeRoute(tree) {
   return (node) => {
     const exhibitionId = tree.root.value?.id
-    const parents = tree.parents(node.id)
-    if (parents.length === 0) {
+    const parent = tree.byId.value.get(node.parent_id)
+    // The breadcrumb hands this every ancestor `tree.parents()` finds, which
+    // — same as the page test above — runs past this tree's own root; an
+    // ancestor above the exhibition has no page/theme route of its own, so
+    // it falls back to the exhibition's, exactly as the exhibition node
+    // itself does.
+    if (node.id === exhibitionId || !parent) {
       return { name: 'exhibition', params: { exhibitionId } }
     }
-    if (parents.length === 1) {
+    if (parent.id === exhibitionId) {
       return { name: 'exhibition-theme', params: { exhibitionId, themeId: node.id }, query: {} }
     }
-    const themeNode = parents[1]
+    const themeNode = parent
     const siblings = tree.children(themeNode.id)
     const tab = siblings.findIndex((sibling) => sibling.id === node.id)
     return { name: 'exhibition-theme', params: { exhibitionId, themeId: themeNode.id }, query: tab > 0 ? { tab } : {} }
@@ -122,6 +131,10 @@ export function exhibitionThemeSpec(tree) {
       },
       fields: (item, node, ctx) => itemMetaFields(item, node, ctx),
     },
+    // The panel's link opens the selected item's own sheet, not a list of
+    // every item in the theme — `EssayView`'s default `seeAll` text ("See
+    // all Items in this Theme") described the wrong destination.
+    seeAll: 'exhibition.theme.seeItemEntry',
     navigation: 'tree',
     breadcrumb: true,
     // Legacy showed no strip: the page title as heading, previous/next walking
