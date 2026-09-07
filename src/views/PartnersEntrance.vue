@@ -19,7 +19,7 @@ function browse(type) {
       <table class="form-table filter-table">
         <tbody>
           <tr>
-            <th><label>{{ $t('baroqueart.partner.museums') }}</label></th>
+            <th><label>{{ $t('partner.list.museums') }}</label></th>
             <td>
               <button class="btn" @click="browse('museum')">{{ $t('baroqueart.action.browseMuseums') }} →</button>
             </td>

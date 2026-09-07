@@ -45,14 +45,14 @@ export const SEARCH_FIELDS = {
 export function useSearchFields() {
   const { t } = useI18n()
   return computed(() => [
-    { value: 'keyword', label: t('baroqueart.field.keywords') },
+    { value: 'keyword', label: t('catalogue.field.keywords') },
     { value: 'name', label: t('sheet.field.name') },
     { value: 'location', label: t('sheet.field.location') },
     { value: 'provenance', label: t('sheet.field.provenance') },
-    { value: 'patron', label: t('baroqueart.field.patron') },
-    { value: 'artist', label: t('baroqueart.field.artist') },
-    { value: 'material', label: t('baroqueart.field.material') },
-    { value: 'other', label: t('baroqueart.field.other') },
+    { value: 'patron', label: t('catalogue.field.patron') },
+    { value: 'artist', label: t('catalogue.field.artist') },
+    { value: 'material', label: t('catalogue.field.material') },
+    { value: 'other', label: t('catalogue.field.other') },
   ])
 }
 
@@ -91,8 +91,8 @@ export const permanentCollection = {
   controls: [
     { key: 'country', label: 'catalogue.facet.country', anyLabel: 'catalogue.facet.any' },
     { key: 'partner', label: 'catalogue.facet.holdingInstitution', anyLabel: 'catalogue.facet.any' },
-    { key: 'begin', type: 'year', label: 'catalogue.facet.fromYear', placeholder: 'baroqueart.filter.fromYearHint' },
-    { key: 'end', type: 'year', label: 'catalogue.facet.toYear', placeholder: 'baroqueart.filter.toYearHint' },
+    { key: 'begin', type: 'year', label: 'catalogue.facet.fromYear', placeholder: 'timeline.form.fromYearHint' },
+    { key: 'end', type: 'year', label: 'catalogue.facet.toYear', placeholder: 'timeline.form.toYearHint' },
   ],
   filterMode: 'apply',
   filterTitle: 'catalogue.filter.heading',

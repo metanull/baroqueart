@@ -146,7 +146,7 @@ const activeFilterLabel = computed(() => {
 
 <template>
   <div>
-    <RouterLink to="/timeline" class="back-link">‹ {{ $t('baroqueart.timeline.backLink') }}</RouterLink>
+    <RouterLink to="/timeline" class="back-link">‹ {{ $t('timeline.nav.backLink') }}</RouterLink>
 
     <h1 class="section-heading">
       {{ $t('baroqueart.nav.timeline') }}
@@ -167,12 +167,12 @@ const activeFilterLabel = computed(() => {
 
       <div class="filter-row">
         <label>{{ $t('catalogue.facet.fromYear') }}</label>
-        <input type="number" v-model="filterBegin" :placeholder="$t('baroqueart.filter.fromYearHint')" style="width:100px" />
+        <input type="number" v-model="filterBegin" :placeholder="$t('timeline.form.fromYearHint')" style="width:100px" />
       </div>
 
       <div class="filter-row">
         <label>{{ $t('catalogue.facet.toYear') }}</label>
-        <input type="number" v-model="filterEnd" :placeholder="$t('baroqueart.filter.toYearHint')" style="width:100px" />
+        <input type="number" v-model="filterEnd" :placeholder="$t('timeline.form.toYearHint')" style="width:100px" />
       </div>
 
       <div class="filter-actions">
@@ -184,7 +184,7 @@ const activeFilterLabel = computed(() => {
     <!-- Results -->
     <div class="content-box">
       <p class="result-count">
-        {{ $t('baroqueart.results.eventsFound') }}: {{ filteredEvents.length }}
+        {{ $t('timeline.results.eventsFound') }}: {{ filteredEvents.length }}
       </p>
 
       <ul v-if="pagedEvents.length" class="timeline-list">
@@ -197,13 +197,13 @@ const activeFilterLabel = computed(() => {
               v-html="md(tr('timeline_events', event.id)?.description ?? '')"
             />
             <RouterLink :to="itemsLink(event)" class="timeline-items-link">
-              {{ $t('baroqueart.action.viewItemsFromPeriod') }} →
+              {{ $t('timeline.action.viewItemsFromPeriod') }} →
             </RouterLink>
           </div>
         </li>
       </ul>
 
-      <p v-else class="no-results">{{ $t('baroqueart.results.noEvents') }}</p>
+      <p v-else class="no-results">{{ $t('timeline.results.noEvents') }}</p>
 
       <Pagination :page-info="pageInfo" :window="7" @navigate="goToPage" />
     </div>
