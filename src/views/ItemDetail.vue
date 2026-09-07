@@ -5,6 +5,7 @@ import { timelineLinkFor } from '@metanull/viewer-core'
 import { MediaGallery, RecordLanguages, SheetSection } from '@metanull/viewer-layout/content'
 import { RecordView } from '@metanull/viewer-layout/views'
 import { useInventoryData } from '../composables/useInventoryData.js'
+import { exhibitionLinksForItem } from '../composables/exhibitions.js'
 import { itemSheet } from '../composables/sheet.js'
 
 // The item sheet is the platform's composed record page, rendering the spec
@@ -17,7 +18,7 @@ import { itemSheet } from '../composables/sheet.js'
 defineProps({ id: { type: String, required: true } })
 
 const router = useRouter()
-const { exhibitionLinksForItem, items, md, mdInline, tr } = useInventoryData()
+const { items, md, mdInline, tr } = useInventoryData()
 
 function back() {
   if (window.history.length > 2) router.back()
