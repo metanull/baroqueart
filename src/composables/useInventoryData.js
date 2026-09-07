@@ -37,8 +37,6 @@ const {
 const items = catalogue.entity('items')
 const countries = catalogue.entity('countries')
 const partners = catalogue.entity('partners')
-const timelines = catalogue.entity('timelines')
-const timelineEvents = catalogue.entity('timeline_events')
 const collections = catalogue.entity('collections')
 
 // ── Lookup maps ────────────────────────────────────────────────────────────
@@ -68,8 +66,6 @@ export function useInventoryData() {
     items,
     countries,
     partners,
-    timelines,
-    timelineEvents,
     collections,
     defaultLang,
     availableLanguages,

@@ -63,6 +63,56 @@ describe('website smoke test', () => {
     app.unmount()
   }, 60000)
 
+  // The Timeline entrance, results and gallery pages moved onto
+  // viewer-layout's `TimelineResultsView`/`CatalogueResultsView` (metanull/baroqueart#64):
+  // the country merge, the overlap filter and the pagination are the
+  // platform's; the per-event link into the Permanent Collection results and
+  // the gallery cross-link (decision D1, the legacy `hcr_gallery.php` this
+  // site had dropped) are this website's own, declared in `composables/timeline.js`.
+  it('renders the Timeline entrance on the composed results view', async () => {
+    const { app, host } = await mountSite('#/timeline')
+    await vi.waitFor(() => expect(host.querySelector('.mwnf-timeline')).not.toBeNull(), { timeout: 20000 })
+    expect(host.querySelector('.section-heading').textContent).toContain('Timeline')
+    expect(host.textContent).toContain('Explore historical events from the Baroque period')
+    app.unmount()
+  }, 30000)
+
+  it('renders the Timeline results with events and offers the gallery cross-link', async () => {
+    const { app, host } = await mountSite('#/timeline/results?country=hun')
+    await vi.waitFor(() => expect(host.querySelector('.mwnf-timeline__row')).not.toBeNull(), { timeout: 20000 })
+
+    // Every one of Hungary's sixty events, paginated fifteen a page (legacy's size).
+    expect(host.querySelectorAll('.mwnf-timeline__row').length).toBe(15)
+
+    // The per-event action, unchanged since before this page moved onto the spec.
+    const action = host.querySelector('.mwnf-timeline__action')
+    expect(action).not.toBeNull()
+    expect(action.textContent).toContain('View items from this period')
+
+    // Hungary carries objects, so the gallery cross-link must appear, with a count.
+    const gallery = host.querySelector('.mwnf-timeline__gallery')
+    expect(gallery).not.toBeNull()
+    expect(gallery.textContent).toContain('See Gallery')
+    expect(gallery.textContent).toContain('86')
+
+    app.unmount()
+  }, 30000)
+
+  it('reaches the Permanent Collection objects of that country from the Timeline gallery', async () => {
+    const { app, host } = await mountSite('#/timeline/gallery?country=hun')
+    await vi.waitFor(() => expect(host.querySelector('.mwnf-list__row')).not.toBeNull(), { timeout: 20000 })
+
+    expect(host.querySelector('.section-heading').textContent).toContain('Timeline Gallery')
+    // Twenty rows a page, the Permanent Collection's own page size.
+    expect(host.querySelectorAll('.mwnf-list__row').length).toBe(20)
+    // The Permanent Collection's own two-part count (objects, monuments) totalling 86.
+    const counts = [...host.querySelectorAll('.mwnf-summary__count')].map((el) => Number(el.textContent))
+    expect(counts.length).toBe(2)
+    expect(counts.reduce((a, b) => a + b, 0)).toBe(86)
+
+    app.unmount()
+  }, 30000)
+
   // The Exhibitions entrance, splash, introduction and theme pages moved
   // onto viewer-layout's composed views (metanull/baroqueart#63) over
   // `useCollectionTree`: `SectionCards` for the entrance and the splash's
@@ -195,8 +245,8 @@ describe('website smoke test', () => {
     const names = config.extraViews.map((r) => r.name)
     for (const name of [
       'home', 'permanent-collection', 'permanent-collection-results', 'database', 'database-results',
-      'timeline', 'timeline-results', 'partners', 'partners-results', 'partner', 'exhibitions',
-      'exhibition', 'exhibition-introduction', 'exhibition-theme', 'item',
+      'timeline', 'timeline-results', 'timeline-gallery', 'partners', 'partners-results', 'partner',
+      'exhibitions', 'exhibition', 'exhibition-introduction', 'exhibition-theme', 'item',
     ]) {
       expect(names).toContain(name)
     }

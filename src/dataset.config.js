@@ -89,7 +89,17 @@ export default {
       path: '/timeline/results',
       name: 'timeline-results',
       component: () => import('./views/TimelineResults.vue'),
-      meta: meta('timeline', ['timelines', 'timeline_events', 'countries']),
+      // 'items' is read only to decide whether the gallery cross-link
+      // appears (decision D1) — the results themselves are events.
+      meta: meta('timeline', ['timelines', 'timeline_events', 'countries', 'items']),
+    },
+    {
+      path: '/timeline/gallery',
+      name: 'timeline-gallery',
+      component: () => import('./views/TimelineGallery.vue'),
+      // Same three entities the Permanent Collection results route reads:
+      // this page renders the same row, scoped rather than re-described.
+      meta: meta('timeline', ['items', 'countries', 'partners']),
     },
     {
       path: '/partners',

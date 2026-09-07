@@ -1,110 +1,18 @@
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { I18nText, useI18n } from '@metanull/viewer-core'
-import { useInventoryData } from '../composables/useInventoryData.js'
-
-const router = useRouter()
-const { t } = useI18n()
-const { timelines, timelineEvents, countryLabel } = useInventoryData()
-
-// Countries available in the timeline data (one Timeline per country)
-const availableCountries = computed(() =>
-  timelines.value
-    .filter(t => t.country_id)
-    .map(t => ({ id: t.country_id, name: countryLabel(t.country_id) }))
-    .sort((a, b) => a.name.localeCompare(b.name))
-)
-
-// Century marks spanning the actual event data, mirroring the legacy
-// hcr_home.php generation (100-year increments from min to max year_from/year_to).
-const centuryMarks = computed(() => {
-  const years = timelineEvents.value.flatMap(e => {
-    const arr = [e.year_from]
-    if (e.year_to && e.year_to !== 0) arr.push(e.year_to)
-    return arr
-  }).filter(y => y != null)
-  if (!years.length) return []
-  const min = Math.floor(Math.min(...years) / 100) * 100
-  const max = Math.ceil(Math.max(...years) / 100) * 100
-  const marks = []
-  for (let y = min; y <= max; y += 100) marks.push(y)
-  return marks
-})
-
-const selectedCountry = ref('')
-const selectedBegin = ref('')
-const selectedEnd = ref('')
-const errorMessage = ref('')
-
-function search() {
-  errorMessage.value = ''
-
-  if (!selectedCountry.value && !(selectedBegin.value && selectedEnd.value)) {
-    errorMessage.value = t('timeline.form.errorSelect')
-    return
-  }
-  if (selectedBegin.value && selectedEnd.value && Number(selectedBegin.value) >= Number(selectedEnd.value)) {
-    errorMessage.value = t('timeline.form.errorPeriod')
-    return
-  }
-
-  const q = {}
-  if (selectedCountry.value && selectedCountry.value !== 'all') q.country = selectedCountry.value
-  if (selectedBegin.value) q.begin = selectedBegin.value
-  if (selectedEnd.value) q.end = selectedEnd.value
-  router.push({ path: '/timeline/results', query: q })
-}
+import { I18nText } from '@metanull/viewer-core'
+import { TimelineResultsView } from '@metanull/viewer-layout/views'
+import { timelineEntrance } from '../composables/timeline.js'
 </script>
 
 <template>
-  <div>
-    <h1 class="section-heading">{{ $t('baroqueart.nav.timeline') }}</h1>
-
-    <div class="content-box">
-      <I18nText tag="p" class="intro-text" keypath="baroqueart.timeline.intro" />
-
-      <table class="form-table filter-table">
-        <tbody>
-          <tr>
-            <th><label for="tl-country">{{ $t('baroqueart.filter.country') }}</label></th>
-            <td>
-              <select id="tl-country" v-model="selectedCountry" style="width:280px">
-                <option value="" disabled>{{ $t('timeline.form.selectCountry') }}</option>
-                <option value="all">{{ $t('timeline.form.allCountries') }}</option>
-                <option v-for="c in availableCountries" :key="c.id" :value="c.id">{{ c.name }}</option>
-              </select>
-            </td>
-          </tr>
-          <tr>
-            <th><label for="tl-begin">{{ $t('timeline.form.startDate') }}</label></th>
-            <td>
-              <select id="tl-begin" v-model="selectedBegin" style="width:160px">
-                <option value="">{{ $t('timeline.form.none') }}</option>
-                <option v-for="y in centuryMarks" :key="y" :value="y">{{ y }} {{ $t('timeline.form.yearSuffix') }}</option>
-              </select>
-            </td>
-          </tr>
-          <tr>
-            <th><label for="tl-end">{{ $t('timeline.form.endDate') }}</label></th>
-            <td>
-              <select id="tl-end" v-model="selectedEnd" style="width:160px">
-                <option value="">{{ $t('timeline.form.none') }}</option>
-                <option v-for="y in centuryMarks" :key="y" :value="y">{{ y }} {{ $t('timeline.form.yearSuffix') }}</option>
-              </select>
-            </td>
-          </tr>
-          <tr>
-            <th></th>
-            <td style="padding-top:12px">
-              <button class="btn" @click="search">{{ $t('baroqueart.action.go') }}</button>
-              <span v-if="errorMessage" class="error-message">{{ errorMessage }}</span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+  <TimelineResultsView :spec="timelineEntrance">
+    <template #before>
+      <h1 class="section-heading">{{ $t('baroqueart.nav.timeline') }}</h1>
+      <div class="content-box">
+        <I18nText tag="p" class="intro-text" keypath="baroqueart.timeline.intro" />
+      </div>
+    </template>
+  </TimelineResultsView>
 </template>
 
 <style scoped>
@@ -112,25 +20,7 @@ function search() {
   font-size: 13px;
   line-height: 1.65;
   color: var(--muted);
-  margin-bottom: 16px;
-  font-family: 'Roboto', sans-serif;
-}
-
-.filter-table th {
-  text-align: left;
-  font-weight: normal;
-  padding: 6px 16px 6px 0;
-  font-family: 'Roboto', sans-serif;
-  font-size: 13px;
-  color: var(--text);
-  vertical-align: middle;
-  width: auto;
-}
-
-.error-message {
-  margin-left: 12px;
-  font-size: 12px;
-  color: var(--nav-active);
+  margin-bottom: 0;
   font-family: 'Roboto', sans-serif;
 }
 </style>
