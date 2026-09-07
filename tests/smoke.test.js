@@ -306,6 +306,52 @@ describe('website smoke test', () => {
     app.unmount()
   }, 30000)
 
+
+  // The Database entrance and its keyword results moved onto
+  // viewer-layout's `SearchFormView`/`CatalogueResultsView` (metanull/baroqueart#66):
+  // the rows, the AND/OR fold and the century presets are the platform's;
+  // this website's own field map (`composables/catalogue.js`'s
+  // `SEARCH_FIELDS`) and the two legacy expansions (decision D3) still run
+  // the actual search.
+  it('renders the Database entrance on the composed search form', async () => {
+    const { app, host } = await mountSite('#/database')
+    await vi.waitFor(() => expect(host.querySelector('.mwnf-search-form')).not.toBeNull(), { timeout: 20000 })
+    expect(host.querySelector('.section-heading').textContent).toContain('Database')
+    // Legacy's three keyword rows, in their own order.
+    expect(host.querySelectorAll('.mwnf-search-form__row').length).toBe(3)
+    expect(host.textContent).toContain('Keyword 1')
+    // The asymmetric century presets (database.php:88-124): "from" runs to
+    // 2001, "to" only to 2000.
+    const fromOptions = [...host.querySelectorAll('.mwnf-search-form__dates select')[0].options].map((o) => o.value)
+    expect(fromOptions).toContain('2001')
+    app.unmount()
+  }, 20000)
+
+  it('finds a record by field, and by its country name through the keyword expansion', async () => {
+    // "Adoring Angel" (Hungarian National Gallery) carries no literal
+    // "Hungary" in its own text — only "Hungarian" — so the second row can
+    // only match through `countryExpansion` resolving "Hungary" to `hun`
+    // and finding it in the `keyword` field's own haystack
+    // (`composables/catalogue.js`'s `SEARCH_FIELDS`, decision D3).
+    const { app, host } = await mountSite('#/database/results?q=Hungary&field=keyword&q2=Adoring+Angel&field2=name&op2=AND')
+    await vi.waitFor(() => expect(host.querySelector('.mwnf-list__row')).not.toBeNull(), { timeout: 20000 })
+    const rows = host.querySelectorAll('.mwnf-list__row')
+    expect(rows.length).toBe(1)
+    expect(rows[0].textContent).toContain('Adoring Angel')
+    app.unmount()
+  }, 20000)
+
+  it('renders the Permanent Collection entrance on the composed search form, one filter at a time', async () => {
+    const { app, host } = await mountSite('#/permanent-collection')
+    await vi.waitFor(() => expect(host.querySelector('.mwnf-search-form--radio')).not.toBeNull(), { timeout: 20000 })
+    expect(host.querySelector('.section-heading').textContent).toContain('Permanent Collection')
+    // The country radio's own options are the values the items actually
+    // carry (`useFacets`), so a real country name must render, not an id.
+    expect(host.textContent).toContain('Italy')
+    app.unmount()
+  }, 20000)
+
+
   it('declares every route by name, and leaves the catch-all to the router', () => {
     const names = config.extraViews.map((r) => r.name)
     for (const name of [

@@ -1,5 +1,3 @@
-import { computed } from 'vue'
-import { useI18n } from '@metanull/viewer-core'
 import { useInventoryData } from './useInventoryData.js'
 
 // The catalogue spec: what this website's lists filter and search on. The
@@ -21,11 +19,15 @@ export const DATE_MODE = 'overlap'
 //
 // What each searches is the legacy form's, field for field. `text` is the
 // record's translation in the search language, with English behind it.
+// `keyword` and `location` also carry the record's own `country_id`:
+// `countryExpansion` (decision D3) resolves a typed country name to its id,
+// and a field is only found by that expansion if its own haystack carries
+// the id to match against.
 
 export const SEARCH_FIELDS = {
-  keyword: (item, text) => [text.name ?? item.internal_name, text.alternate_name, text.description, ...(item.tags ?? [])],
+  keyword: (item, text) => [text.name ?? item.internal_name, text.alternate_name, text.description, ...(item.tags ?? []), item.country_id],
   name: (item, text) => text.name ?? item.internal_name,
-  location: (item, text) => text.location,
+  location: (item, text) => [text.location, item.country_id],
   provenance: (item, text) => text.provenance,
   patron: (item, text) => text.patrons ?? text.initial_owner,
   artist: (item, text) => [...(item.artist_names ?? []), text.architects],
@@ -38,23 +40,22 @@ export const SEARCH_FIELDS = {
 }
 
 /**
- * The field options of the search form, in legacy's order. `value` is the
- * query parameter and never a text; each label is written out, because the
- * check that every name resolves can only see the ones it can read.
+ * The field options of the search form, in legacy's order: `key` is the
+ * query parameter and never a text; `label` is an entry name, written out
+ * in full, resolved by whichever view or template reads it
+ * (`SearchFormView`'s own `t`, or a site template's `$t`) — never here, so
+ * the check that every name resolves can see it.
  */
-export function useSearchFields() {
-  const { t } = useI18n()
-  return computed(() => [
-    { value: 'keyword', label: t('catalogue.field.keywords') },
-    { value: 'name', label: t('sheet.field.name') },
-    { value: 'location', label: t('sheet.field.location') },
-    { value: 'provenance', label: t('sheet.field.provenance') },
-    { value: 'patron', label: t('catalogue.field.patron') },
-    { value: 'artist', label: t('catalogue.field.artist') },
-    { value: 'material', label: t('catalogue.field.material') },
-    { value: 'other', label: t('catalogue.field.other') },
-  ])
-}
+export const SEARCH_FIELD_OPTIONS = [
+  { key: 'keyword', label: 'catalogue.field.keywords' },
+  { key: 'name', label: 'sheet.field.name' },
+  { key: 'location', label: 'sheet.field.location' },
+  { key: 'provenance', label: 'sheet.field.provenance' },
+  { key: 'patron', label: 'catalogue.field.patron' },
+  { key: 'artist', label: 'catalogue.field.artist' },
+  { key: 'material', label: 'catalogue.field.material' },
+  { key: 'other', label: 'catalogue.field.other' },
+]
 
 // ── The facets of the Permanent Collection ─────────────────────────────────
 //
