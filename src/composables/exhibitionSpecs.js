@@ -124,7 +124,10 @@ export function exhibitionThemeSpec(tree) {
     },
     navigation: 'tree',
     breadcrumb: true,
-    tabs: true,
+    // Legacy showed no strip: the page title as heading, previous/next walking
+    // the pages, and the pages of a theme carry the theme's title, so a strip
+    // would repeat one label.
+    tabs: false,
     numbering: false,
   }
 }

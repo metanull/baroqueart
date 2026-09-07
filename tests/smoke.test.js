@@ -96,11 +96,12 @@ describe('website smoke test', () => {
     app.unmount()
   }, 30000)
 
-  it('renders an exhibition theme on the composed essay view, with its tab strip, panel and navigation', async () => {
+  it('renders an exhibition theme on the composed essay view, with panel and navigation', async () => {
     const { exhibition, theme } = findExhibitionThemeWithPages()
     const { app, host } = await mountSite(`#/exhibitions/${exhibition.id}/theme/${theme.id}`)
     await vi.waitFor(() => expect(host.querySelector('.mwnf-essay')).not.toBeNull(), { timeout: 20000 })
-    expect(host.querySelector('.mwnf-essay__tabs')).not.toBeNull()
+    expect(host.querySelector('.mwnf-essay__tabs')).toBeNull()
+    expect(host.querySelector('.mwnf-essay__nav-link')).not.toBeNull()
     expect(host.querySelector('.mwnf-essay__panel')).not.toBeNull()
     expect(host.querySelector('.mwnf-essay-nav, .mwnf-essay__nav')).not.toBeNull()
 
