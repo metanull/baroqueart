@@ -241,6 +241,71 @@ describe('website smoke test', () => {
     app.unmount()
   }, 30000)
 
+  // The Partners entrance stays this site's own (the museum/institution
+  // choice); the results list and the profile sheet moved onto
+  // viewer-layout's `PartnerListView`/`RecordView` (metanull/baroqueart#65):
+  // the country grouping, the main/associated tiers and the nested
+  // hierarchy are the platform's, over the republished partner shape
+  // (`level`, `parent_id`, `item_count`) — this website's own composable
+  // (`composables/partner.js`) supplies only the museum/institution axis,
+  // the contact/logo blocks and the reverse item lookup.
+  it('renders the Partners results on the composed list view, tiers nested by country', async () => {
+    const [partners] = await loadEntities(['partners'])
+
+    const { app, host } = await mountSite('#/partners/results?type=museum')
+    await vi.waitFor(() => expect(host.querySelector('.mwnf-partner-list__row')).not.toBeNull(), { timeout: 20000 })
+
+    expect(host.querySelector('.mwnf-partner-list')).not.toBeNull()
+    expect(host.querySelector('.section-heading, .mwnf-partner-list__title').textContent).toContain('Museums')
+
+    // The "Partners found" count is the platform's own row count: a nested
+    // associated partner is folded under its parent's row, not counted
+    // again, so this is main museums plus the associated ones that stay
+    // flat (no museum parent in the list) — not every museum record.
+    const museums = partners.filter((p) => p.type === 'museum')
+    const museumIds = new Set(museums.map((p) => p.id))
+    const nestedCount = museums.filter((p) => p.parent_id && museumIds.has(p.parent_id)).length
+    expect(host.querySelector('.mwnf-partner-list__count').textContent).toContain(`${museums.length - nestedCount}`)
+
+    // Moravian Gallery (main, Czech Republic) and its associated City
+    // Museum: the child nests under its own parent's row rather than a
+    // flat "Associated" column, reading `parent_id` through `partnerHierarchy`.
+    expect(host.textContent).toContain('Moravian Gallery')
+    expect(host.textContent).toContain('City Museum')
+    const parentRow = [...host.querySelectorAll('.mwnf-partner-list__row-block')].find((el) => el.textContent.includes('Moravian Gallery'))
+    expect(parentRow?.querySelector('.mwnf-partner-list__children')?.textContent).toContain('City Museum')
+
+    app.unmount()
+  }, 30000)
+
+  it('renders a partner profile on the composed record view, with contact and held items', async () => {
+    // The Borghese Gallery: a museum with images, contact details and 50
+    // held objects — enough of the sheet's sections to exercise the
+    // contact/logo Markdown blocks and the reverse `partner_id` lookup the
+    // platform's `related` cannot express (partner.js's `heldItems`).
+    const partnerId = 'fae81dae-0250-52ec-acc1-171da28b9eef'
+    const { app, host } = await mountSite(`#/partner/${partnerId}`)
+    await vi.waitFor(() => expect(host.querySelector('.mwnf-record')).not.toBeNull(), { timeout: 20000 })
+
+    expect(host.querySelector('.detail-title').textContent).toContain('Borghese Gallery')
+    expect(host.querySelector('.detail-type-badge').textContent.trim()).toBe('Museum')
+    expect(host.textContent).toContain('Rome')
+    expect(host.textContent).toContain('Italy')
+
+    // The contact block, folded into Markdown so the sheet's own section
+    // renderer carries it.
+    expect(host.textContent).toContain('+39 06 8413979')
+
+    // "View Objects (50)" — item_count is the package's own count, not a
+    // scan of every item.
+    const viewItems = host.querySelector('.view-items-row')
+    expect(viewItems).not.toBeNull()
+    expect(viewItems.textContent).toContain('View Objects')
+    expect(viewItems.textContent).toContain('50')
+
+    app.unmount()
+  }, 30000)
+
   it('declares every route by name, and leaves the catch-all to the router', () => {
     const names = config.extraViews.map((r) => r.name)
     for (const name of [

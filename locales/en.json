@@ -25,17 +25,14 @@
   "baroqueart.nav.permanentCollection": "Permanent Collection",
   "baroqueart.nav.timeline": "Timeline",
   "baroqueart.notFound.exhibitions": "No exhibitions available.",
-  "baroqueart.notFound.partner": "Partner not found.",
-  "baroqueart.partner.associatedInstitutions": "Associated Institutions",
-  "baroqueart.partner.associatedMuseums": "Associated Museums",
   "baroqueart.partner.introDiscover": "Discover Baroque Art is a collaborative project bringing together museums and institutions from across Europe and beyond. Browse the partner museums that lend and hold the objects in the collection, or the partner institutions responsible for the monuments and historic sites.",
   "baroqueart.partner.noInstitutions": "No partner institutions found.",
   "baroqueart.partner.noMuseums": "No partner museums found.",
+  "baroqueart.partner.openInOpenStreetMap": "View on OpenStreetMap",
   "baroqueart.partner.others": "Other Partners",
   "baroqueart.partner.viewInstitutions": "view partner institutions instead",
   "baroqueart.partner.viewMuseums": "view partner museums instead",
   "baroqueart.pc.intro": "Select a filter to browse the Permanent Collection. Choose a category below, then select a value and click **Browse**.",
-  "baroqueart.project.discover": "Discover Baroque Art",
   "baroqueart.results.otherCountry": "Other",
   "baroqueart.timeline.intro": "Explore historical events from the Baroque period. Select a country and/or a time period below, then click **Go**."
 }
