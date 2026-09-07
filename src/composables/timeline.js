@@ -29,17 +29,8 @@ function itemsLink(event) {
   }
 }
 
-// `TimelineResultsView@2.9.0` hands `event(event, ctx)` the raw `computed()`
-// ref it built `{ t, tr, years }` from, not its `.value` — `ctx.t` is
-// `undefined` there, only `ctx.value.t` holds the function. Unwrapping here
-// keeps this site's spec correct against the shipped behaviour and against
-// a future release that passes the plain object, whichever comes first.
-function unwrap(ctx) {
-  return typeof ctx?.t === 'function' ? ctx : ctx?.value
-}
-
 function timelineEvent(event, ctx) {
-  const { t } = unwrap(ctx)
+  const { t } = ctx
   const text = tr('timeline_events', event.id)
   return {
     id: event.id,

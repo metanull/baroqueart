@@ -58,7 +58,7 @@ function normalizeUrl(url) {
         :zoom="record.map_zoom ?? 15"
         map-title-entry="partner.map.map"
         map-of-entry="partner.map.mapOf"
-        open-map-link-entry="baroqueart.partner.openInOpenStreetMap"
+        open-map-link-entry="gallery.action.openInOpenStreetMap"
         :label="mapLabel(record, text)"
       />
     </template>
