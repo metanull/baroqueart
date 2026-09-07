@@ -49,11 +49,11 @@ function back() {
 <template>
   <div v-if="!exhibition" class="content-box not-found">
     <p>{{ $t('baroqueart.notFound.exhibition') }}</p>
-    <router-link to="/exhibitions">← {{ $t('baroqueart.exhibition.returnLink') }}</router-link>
+    <router-link to="/exhibitions">← {{ $t('exhibition.chapter.returnToExhibitions') }}</router-link>
   </div>
 
   <div v-else>
-    <a class="back-link" href="#" @click.prevent="back">← {{ $t('baroqueart.exhibition.backLink') }}</a>
+    <a class="back-link" href="#" @click.prevent="back">← {{ $t('exhibition.chapter.returnToExhibitions') }}</a>
 
     <h1 class="section-heading" v-html="mdInline(text.title ?? exhibition.internal_name)" />
 

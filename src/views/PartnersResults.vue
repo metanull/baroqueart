@@ -16,8 +16,8 @@ const otherType = computed(() => (filterType.value === 'museum' ? 'institution' 
 // the check that every name a page asks for exists.
 const typeHeading = computed(() =>
   filterType.value === 'museum'
-    ? t('baroqueart.partner.museums')
-    : t('baroqueart.partner.institutions')
+    ? t('partner.list.museums')
+    : t('partner.list.institutions')
 )
 const associatedLabel = computed(() =>
   filterType.value === 'museum'
@@ -75,7 +75,7 @@ function partnerLink(partner) {
 
 <template>
   <div>
-    <RouterLink to="/partners" class="back-link">‹ {{ $t('baroqueart.partner.backLink') }}</RouterLink>
+    <RouterLink to="/partners" class="back-link">‹ {{ $t('partner.nav.back') }}</RouterLink>
 
     <h1 class="section-heading">
       {{ typeHeading }}
@@ -84,7 +84,7 @@ function partnerLink(partner) {
 
     <div class="content-box">
       <p class="result-count">
-        {{ $t('baroqueart.results.partnersFound') }}: {{ totalCount }} —
+        {{ $t('partner.list.partnersFound') }}: {{ totalCount }} —
         <RouterLink :to="{ path: '/partners/results', query: { type: otherType } }">
           {{ otherTypeLabel }}
         </RouterLink>

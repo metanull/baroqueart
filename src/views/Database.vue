@@ -28,7 +28,7 @@ const rows = ref([
   { keyword: '', field: 'keyword', cond: 'AND' },
   { keyword: '', field: 'keyword', cond: 'AND' },
 ])
-const rowLabels = computed(() => [t('baroqueart.search.keywordOne'), t('baroqueart.search.keywordTwo'), t('baroqueart.search.keywordThree')])
+const rowLabels = computed(() => [t('catalogue.search.keywordOne'), t('catalogue.search.keywordTwo'), t('catalogue.search.keywordThree')])
 const dateFrom = ref('')
 const dateTo = ref('')
 const searchLanguage = ref('')
@@ -60,7 +60,7 @@ function showAll() {
     <h1 class="section-heading">{{ $t('baroqueart.nav.database') }}</h1>
 
     <div class="content-box">
-      <I18nText tag="p" class="intro-text" keypath="baroqueart.search.intro" />
+      <I18nText tag="p" class="intro-text" keypath="catalogue.search.intro" />
 
       <form class="db-form" @submit.prevent="search">
         <table>

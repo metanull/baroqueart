@@ -63,7 +63,7 @@ function search() {
               v-model="selected[opt.value]"
               type="number"
               :disabled="filterType !== opt.value"
-              :placeholder="opt.value === 'begin' ? $t('baroqueart.filter.fromYearHint') : $t('baroqueart.filter.endDateHint')"
+              :placeholder="opt.value === 'begin' ? $t('timeline.form.fromYearHint') : $t('baroqueart.filter.endDateHint')"
             />
           </div>
         </div>

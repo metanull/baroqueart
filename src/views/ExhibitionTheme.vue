@@ -173,7 +173,7 @@ function back() {
   <div v-if="!theme" class="content-box not-found">
     <p>{{ $t('baroqueart.notFound.theme') }}</p>
     <router-link v-if="exhibition" :to="`/exhibitions/${exhibition.id}`">← {{ $t('baroqueart.exhibition.returnToExhibition') }}</router-link>
-    <router-link v-else to="/exhibitions">← {{ $t('baroqueart.exhibition.returnLink') }}</router-link>
+    <router-link v-else to="/exhibitions">← {{ $t('exhibition.chapter.returnToExhibitions') }}</router-link>
   </div>
 
   <div v-else class="theme-wrap">
