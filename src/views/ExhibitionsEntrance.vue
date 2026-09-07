@@ -1,77 +1,37 @@
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from '@metanull/viewer-core'
+import { SectionCards } from '@metanull/viewer-layout/content'
+import { exhibitionsTree } from '../composables/exhibitions.js'
 import { useInventoryData } from '../composables/useInventoryData.js'
 
-const {
-  exhibitions,
-  mdInline,
-  tr,
-} = useInventoryData()
+// The exhibitions list: one card per exhibition, `SectionCards`' `rows`
+// variant. A card's title is catalogue data, not a fixed entry, so it is
+// stripped of Markdown rather than rendered — `SectionCards` interpolates
+// it as plain text, not HTML.
+const { mdStrip, tr } = useInventoryData()
+const { t } = useI18n()
 
-const exhibitionList = computed(() =>
-  exhibitions.value.map(e => ({
-    ...e,
-    title: tr('collections', e.id)?.title ?? e.internal_name,
+const exhibitionCards = computed(() => {
+  const root = exhibitionsTree.root.value
+  if (!root) return []
+  return exhibitionsTree.children(root.id).map((exhibition) => ({
+    title: mdStrip(tr('collections', exhibition.id).title ?? exhibition.internal_name),
+    to: { name: 'exhibition', params: { exhibitionId: exhibition.id } },
   }))
-)
+})
 </script>
 
 <template>
-  <div v-if="!exhibitionList.length" class="content-box not-found">
-    <p>{{ $t('baroqueart.notFound.exhibitions') }}</p>
+  <div v-if="!exhibitionCards.length" class="content-box">
+    <p>{{ t('baroqueart.notFound.exhibitions') }}</p>
   </div>
 
   <div v-else>
-    <h1 class="section-heading">{{ $t('baroqueart.nav.exhibitions') }}</h1>
-
+    <h1 class="section-heading">{{ t('baroqueart.nav.exhibitions') }}</h1>
     <div class="content-box">
-      <p class="intro-text">{{ $t('baroqueart.exhibition.selectPrompt') }}</p>
-      <ul class="theme-list">
-        <li
-          v-for="e in exhibitionList"
-          :key="e.id"
-          class="theme-row"
-          @click="$router.push(`/exhibitions/${encodeURIComponent(e.id)}`)"
-        >
-          <span class="theme-name" v-html="mdInline(e.title)" />
-          <span class="theme-arrow">→</span>
-        </li>
-      </ul>
+      <p>{{ t('baroqueart.exhibition.selectPrompt') }}</p>
+      <SectionCards :cards="exhibitionCards" variant="rows" />
     </div>
   </div>
 </template>
-
-<style scoped>
-.not-found { color: var(--muted); font-family: 'Roboto', sans-serif; font-size: 13px; }
-
-.intro-text {
-  font-size: 13px;
-  line-height: 1.65;
-  color: var(--muted);
-  margin-bottom: 16px;
-  font-family: 'Roboto', sans-serif;
-}
-
-.theme-list { list-style: none; }
-.theme-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 4px;
-  border-bottom: 1px solid var(--border-light);
-  cursor: pointer;
-}
-.theme-row:last-child { border-bottom: none; }
-.theme-row:hover .theme-name { color: var(--nav-active); }
-
-.theme-name {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--heading);
-  font-family: 'Roboto', sans-serif;
-}
-.theme-arrow {
-  color: var(--muted);
-  font-size: 14px;
-}
-</style>

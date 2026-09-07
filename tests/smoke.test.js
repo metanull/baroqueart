@@ -62,6 +62,80 @@ describe('website smoke test', () => {
     app.unmount()
   }, 60000)
 
+  // The Exhibitions entrance, splash, introduction and theme pages moved
+  // onto viewer-layout's composed views (metanull/baroqueart#63) over
+  // `useCollectionTree`: `SectionCards` for the entrance and the splash's
+  // theme list, `EssayView` for the introduction (an `about` page) and a
+  // theme's pages (the narrative, the tab strip, the picture panel, and
+  // previous/next walking the whole exhibition — decision D2).
+  function findExhibitionThemeWithPages() {
+    // Not every theme has more than one page; the tab strip (asserted
+    // below) only renders past one, so this hunts for one that does rather
+    // than assuming the first exhibition's first theme is that one.
+    for (const exhibition of collectionsFixture.filter((c) => c.parent_id === exhibitionsRoot.id)) {
+      for (const theme of collectionsFixture.filter((c) => c.parent_id === exhibition.id)) {
+        const pages = collectionsFixture.filter((c) => c.parent_id === theme.id)
+        if (pages.length > 1) return { exhibition, theme }
+      }
+    }
+    return null
+  }
+
+  let collectionsFixture
+  let exhibitionsRoot
+
+  it('renders the Exhibitions entrance on SectionCards', async () => {
+    ;[collectionsFixture] = await loadEntities(['collections'])
+    exhibitionsRoot = collectionsFixture.find((c) => c.purpose === 'exhibitions-root')
+    expect(exhibitionsRoot).toBeTruthy()
+
+    const { app, host } = await mountSite('#/exhibitions')
+    await vi.waitFor(() => expect(host.querySelector('.mwnf-cards')).not.toBeNull(), { timeout: 20000 })
+    expect(host.querySelector('.section-heading').textContent).toContain('Exhibitions')
+    app.unmount()
+  }, 30000)
+
+  it('renders an exhibition theme on the composed essay view, with its tab strip, panel and navigation', async () => {
+    const { exhibition, theme } = findExhibitionThemeWithPages()
+    const { app, host } = await mountSite(`#/exhibitions/${exhibition.id}/theme/${theme.id}`)
+    await vi.waitFor(() => expect(host.querySelector('.mwnf-essay')).not.toBeNull(), { timeout: 20000 })
+    expect(host.querySelector('.mwnf-essay__tabs')).not.toBeNull()
+    expect(host.querySelector('.mwnf-essay__panel')).not.toBeNull()
+    expect(host.querySelector('.mwnf-essay-nav, .mwnf-essay__nav')).not.toBeNull()
+
+    // `panel.variants` (metanull/viewer-layout#49): the panel opens on the
+    // first item's own image with its name as the panel's title; where
+    // that item carries curated "detail" close-ups (`entry.details`), a
+    // second thumbnail is offered and swaps the whole caption — title,
+    // justification and fields together, not just the picture — when
+    // picked.
+    const panelName = host.querySelector('.mwnf-essay__panel-name')
+    expect(panelName).not.toBeNull()
+    expect(panelName.textContent.trim()).not.toBe('')
+
+    const activePage = collectionsFixture.find((c) => c.parent_id === theme.id)
+    const firstItemEntry = activePage?.items?.[0]
+    if ((firstItemEntry?.details ?? []).length > 0) {
+      const variants = host.querySelectorAll('.mwnf-essay__variant')
+      expect(variants.length).toBeGreaterThan(1)
+      const initialName = panelName.textContent
+      variants[1].click()
+      await vi.waitFor(() => expect(host.querySelector('.mwnf-essay__panel-name').textContent).not.toBe(initialName))
+    }
+
+    app.unmount()
+  }, 30000)
+
+  it('renders an exhibition introduction as an about essay', async () => {
+    const withIntro = collectionsFixture.find((c) => c.parent_id === exhibitionsRoot.id && (c.items?.length ?? 0) > 0)
+    expect(withIntro).toBeTruthy()
+
+    const { app, host } = await mountSite(`#/exhibitions/${withIntro.id}/introduction`)
+    await vi.waitFor(() => expect(host.querySelector('.mwnf-essay')).not.toBeNull(), { timeout: 20000 })
+    expect(host.querySelector('.mwnf-essay--about')).not.toBeNull()
+    app.unmount()
+  }, 30000)
+
   it('declares every route by name, and leaves the catch-all to the router', () => {
     const names = config.extraViews.map((r) => r.name)
     for (const name of [
