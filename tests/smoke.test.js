@@ -3,6 +3,7 @@ import { createViewer, loadEntities, mergeMessages } from '@metanull/viewer-core
 import { checkOfferedLanguages } from '@metanull/viewer-core/testing'
 import { catalogues as sharedTexts } from '@metanull/viewer-i18n/standalone'
 import ownTexts from '../locales/en.json'
+import collectionsTranslations from '../node_modules/@metanull/baroqueart-data/translations/collections.en.json'
 import config from '../src/dataset.config.js'
 import { useInventoryData } from '../src/composables/useInventoryData.js'
 
@@ -102,6 +103,24 @@ describe('website smoke test', () => {
     expect(host.querySelector('.mwnf-essay__tabs')).not.toBeNull()
     expect(host.querySelector('.mwnf-essay__panel')).not.toBeNull()
     expect(host.querySelector('.mwnf-essay-nav, .mwnf-essay__nav')).not.toBeNull()
+
+    // EssayView reads collection texts through the tree's own entity
+    // (viewer-core 1.12.1+), so assertions on the rendered title and prose
+    // verify that the tree was built with entity: 'collections' and that
+    // the view picks it up, rather than falling back to the spec's items
+    // entity and rendering internal names. If these assertions fail after
+    // installing viewer-core, the entity is not reaching the view.
+    const titleElement = host.querySelector('.mwnf-essay__title')
+    const themeTranslation = collectionsTranslations[theme.id] || {}
+    expect(titleElement).not.toBeNull()
+    expect(titleElement.textContent.trim().toLowerCase()).toBe((themeTranslation.title ?? '').toLowerCase())
+    expect(titleElement.textContent).not.toBe(theme.internal_name)
+
+    const proseElement = host.querySelector('.mwnf-essay__body, .mwnf-essay__prose')
+    if (themeTranslation.description) {
+      expect(proseElement).not.toBeNull()
+      expect(proseElement.textContent.trim().length).toBeGreaterThan(0)
+    }
 
     // `panel.variants` (metanull/viewer-layout#49): the panel opens on the
     // first item's own image with its name as the panel's title; where
