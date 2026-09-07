@@ -21,6 +21,14 @@ const {
 
 const partner = computed(() => partners.value.find(p => p.id === decodeURIComponent(route.params.id)) ?? null)
 
+// The enum is data, not a text; the badge renders one of these two catalogue
+// entries so a reader (and `viewer-i18n-check`) sees both names written out.
+const typeLabel = computed(() =>
+  partner.value?.type === 'museum'
+    ? t('baroqueart.partner.typeMuseum')
+    : t('baroqueart.partner.typeInstitution')
+)
+
 // ── Content language (partner translations are loaded on demand, per-lang) ──
 // Follows the global site locale; falls back to the dataset default when the
 // locale has no partner translations.
@@ -110,7 +118,7 @@ function back() {
     <a class="back-link" href="#" @click.prevent="back">← {{ $t('baroqueart.partner.backLink') }}</a>
 
     <div class="detail content-box">
-      <div class="detail-type-badge">{{ partner.type }}</div>
+      <div class="detail-type-badge">{{ typeLabel }}</div>
 
       <h1 class="detail-title" v-html="mdInline(text.name ?? partner.id)" />
       <h2 v-if="text.city || partner.country_id" class="detail-subtitle">
