@@ -14,7 +14,7 @@
     "namespace": "baroqueart"
   },
   "dependencies": {
-    "@metanull/baroqueart-data": "^2.0.8",
+    "@metanull/baroqueart-data": "^2.0.9",
     "@metanull/viewer-core": "^1.13.1",
     "@metanull/viewer-i18n": "^3.0.0",
     "@metanull/viewer-layout": "^2.11.1",

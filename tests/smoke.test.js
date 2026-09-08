@@ -99,6 +99,13 @@ describe('website smoke test', () => {
     expect(gallery.textContent).toContain('See Gallery')
     expect(gallery.textContent).toContain('86')
 
+    // Timeline events now carry their descriptions (inventory-app#1705):
+    // verify a row's rendered description and date against the fixture.
+    const descriptions = [...host.querySelectorAll('.mwnf-timeline__description')].map((el) => el.textContent.trim())
+    const dates = [...host.querySelectorAll('.mwnf-timeline__date')].map((el) => el.textContent.trim())
+    expect(descriptions.some((desc) => desc.startsWith('According to the double conquest theory'))).toBe(true)
+    expect(dates).toContain('670/680')
+
     app.unmount()
   }, 30000)
 
