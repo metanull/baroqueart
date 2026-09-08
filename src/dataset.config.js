@@ -26,6 +26,12 @@ export default {
 
   siteName: manifest.site?.names?.en ?? 'Baroque Art',
 
+  // The deployed origin, read by `sourceUrl()` for the citation permalink and
+  // the source credit's link. GitHub Pages serves this repo at
+  // metanull.github.io/<repo>, the same base path the build's BASE_PATH sets
+  // in vite.config.js — this changes if the site ever moves to its own domain.
+  site: { origin: 'https://metanull.github.io/baroqueart' },
+
   // All pages are website-specific views (below) — no generic entity pages.
   features: {
     entities: [],

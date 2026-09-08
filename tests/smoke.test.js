@@ -4,6 +4,7 @@ import { checkOfferedLanguages, checkRoutes, checkSectionMeta, checkTextsRendere
 import { catalogues as sharedTexts } from '@metanull/viewer-i18n/standalone'
 import ownTexts from '../locales/en.json'
 import collectionsTranslations from '../node_modules/@metanull/baroqueart-data/translations/collections.en.json'
+import manifest from '../node_modules/@metanull/baroqueart-data/manifest.json'
 import config from '../src/dataset.config.js'
 import { useInventoryData } from '../src/composables/useInventoryData.js'
 
@@ -55,6 +56,14 @@ describe('website smoke test', () => {
     expect(host.querySelector('.mwnf-record')).not.toBeNull()
     expect(host.querySelector('.detail-type-badge').textContent.trim()).toBe(object.type)
     expect(host.querySelector('.detail-title').textContent.trim()).not.toBe('')
+
+    // The citation's permalink (viewer-core's sourceUrl), now that this site
+    // declares site.origin — the sheet's own record, not a guessed address.
+    const sourceCredit = host.querySelector('.mwnf-source-credit')
+    expect(sourceCredit).not.toBeNull()
+    const sourceLink = sourceCredit.querySelector('a')
+    expect(sourceLink.textContent.startsWith(config.site.origin)).toBe(true)
+    expect(sourceLink.textContent).toContain(`#/item/${object.id}`)
     app.unmount()
   }, 60000)
 
@@ -233,6 +242,15 @@ describe('website smoke test', () => {
     const { app, host } = await mount(`#/exhibitions/${withIntro.id}/introduction`)
     await vi.waitFor(() => expect(host.querySelector('.mwnf-essay')).not.toBeNull(), { timeout: 20000 })
     expect(host.querySelector('.mwnf-essay--about')).not.toBeNull()
+
+    // This view's own #after slot carries the "back to exhibition" bar,
+    // overriding EssayView's default #after (the source credit) — it must
+    // render both, not replace one with the other.
+    const sourceCredit = host.querySelector('.mwnf-source-credit')
+    expect(sourceCredit).not.toBeNull()
+    expect(sourceCredit.querySelector('a').textContent.startsWith(config.site.origin)).toBe(true)
+    expect(host.querySelector('.mwnf-back-bar')).not.toBeNull()
+
     app.unmount()
   }, 30000)
 
@@ -417,8 +435,32 @@ describe('website smoke test', () => {
     expect(text).toContain('Permanent Collection')
     expect(text).toContain('Welcome to Baroque Art')
     // Nothing rendered as a bare entry name, which is what a missing text
-    // looks like — there is no exception to throw for one.
-    expect(checkTextsRendered(host, { namespaces: ['baroqueart'] })).toEqual([])
+    // looks like — there is no exception to throw for one. Every namespace
+    // a page actually reads, not just this site's own: a raw shared key
+    // (record.*, sheet.*, timeline.*, partner.*, exhibition.*, the shared
+    // core/layout/catalogue chrome) would otherwise pass unseen.
+    expect(checkTextsRendered(host, {
+      namespaces: ['baroqueart', 'core', 'layout', 'catalogue', 'record', 'sheet', 'timeline', 'partner', 'exhibition'],
+    })).toEqual([])
+
+    app.unmount()
+  }, 20000)
+
+  // The footer, rendered by SiteShell once the loaded package's
+  // manifest.rights names a holder (viewer-layout 2.11.1): the attribution
+  // sentence and the terms link are the package's own facts, read through
+  // useSiteRights() — nothing this site writes out itself.
+  it('renders the rights attribution and the terms link in the footer', async () => {
+    const { app, host } = await mount()
+
+    const attribution = host.querySelector('.mwnf-footer__attribution')
+    expect(attribution).not.toBeNull()
+    expect(attribution.textContent).toContain(manifest.rights.attribution)
+
+    const termsLink = host.querySelector('.mwnf-footer__terms')
+    expect(termsLink).not.toBeNull()
+    expect(termsLink.textContent.trim()).toBe(sharedTexts.en['record.source.termsOfUse'])
+    expect(termsLink.getAttribute('href')).toBe(manifest.rights.terms_url)
 
     app.unmount()
   }, 20000)
