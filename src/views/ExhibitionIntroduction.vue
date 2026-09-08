@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { EssayView } from '@metanull/viewer-layout/views'
+import { SourceCredit } from '@metanull/viewer-layout/content'
 import { exhibitionTree } from '../composables/exhibitions.js'
 import { exhibitionIntroductionSpec } from '../composables/exhibitionSpecs.js'
 import { useInventoryData } from '../composables/useInventoryData.js'
@@ -34,6 +35,9 @@ function back() {
 <template>
   <EssayView :key="exhibitionId" :spec="spec" :id="exhibitionId" class="mwnf-panel">
     <template #after>
+      <!-- Overriding EssayView's #after slot for the back-bar drops its
+           default SourceCredit, so it is rendered here explicitly. -->
+      <SourceCredit />
       <div class="mwnf-back-bar"><a href="#" @click.prevent="back">← {{ $t('baroqueart.exhibition.backTo') }} {{ exhibitionTitle }}</a></div>
     </template>
   </EssayView>
