@@ -35,11 +35,21 @@ export default {
 
   shell: SiteShell,
 
-  // Only what is not a text. The menu labels and the footer line are texts, so
-  // they are built in SiteShell.vue where the catalogue is installed; the
-  // language names below come from the data package, not from a translator.
+  // The legacy site's own top-level sections, in its own order — this site
+  // has no Dynasties or Artistic Introduction. `label` is an entry name,
+  // resolved by SiteShell through `t()`; `section` is matched against
+  // `useSection()` (itself read off a route's `meta.section`) to mark the
+  // active menu entry, never derived from the path.
   navigation: {
     languages: languageLabels(languages),
+    links: [
+      { section: 'home', label: 'core.nav.home', to: { name: 'home' } },
+      { section: 'permanent-collection', label: 'baroqueart.nav.permanentCollection', to: { name: 'permanent-collection' } },
+      { section: 'database', label: 'baroqueart.nav.database', to: { name: 'database' } },
+      { section: 'timeline', label: 'baroqueart.nav.timeline', to: { name: 'timeline' } },
+      { section: 'partners', label: 'baroqueart.nav.partners', to: { name: 'partners' } },
+      { section: 'exhibitions', label: 'baroqueart.nav.exhibitions', to: { name: 'exhibitions' } },
+    ],
   },
 
   // The route map: every route named, kebab-case sections, the package id in

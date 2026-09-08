@@ -22,8 +22,8 @@ function filterLabel(filters) {
 <template>
   <TimelineResultsView :spec="timelineResults">
     <template #before="{ filters }">
-      <RouterLink to="/timeline" class="back-link">‹ {{ $t('timeline.nav.backLink') }}</RouterLink>
-      <h1 class="section-heading">
+      <div class="mwnf-back-bar"><RouterLink to="/timeline">‹ {{ $t('timeline.nav.backLink') }}</RouterLink></div>
+      <h1 class="mwnf-heading">
         {{ $t('baroqueart.nav.timeline') }}
         <span v-if="filterLabel(filters)" class="heading-filter"> — {{ filterLabel(filters) }}</span>
       </h1>

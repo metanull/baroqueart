@@ -26,7 +26,7 @@ function activeFilterLabel(filters) {
 <template>
   <CatalogueResultsView :spec="permanentCollection" class="pc-list">
     <template #before="{ filters }">
-      <h1 class="section-heading">
+      <h1 class="mwnf-heading">
         {{ $t('baroqueart.nav.permanentCollection') }}
         <span v-if="activeFilterLabel(filters)" class="heading-filter"> — {{ activeFilterLabel(filters) }}</span>
       </h1>
@@ -37,7 +37,9 @@ function activeFilterLabel(filters) {
 <style scoped>
 .heading-filter { font-weight: normal; font-size: 14px; color: var(--muted); }
 .pc-list :deep(.mwnf-catalogue__filters) { margin-bottom: 16px; }
-/* The results in the website's content box, as every section's page is. */
+/* CatalogueResultsView's own root has no class prop to carry mwnf-panel, so
+   this reaches its inner body by depth instead — the panel look every
+   section's page otherwise gets straight from the class. */
 .pc-list :deep(.mwnf-catalogue__body) {
   background: var(--content-bg);
   border: 1px solid var(--border);

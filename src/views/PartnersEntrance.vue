@@ -11,23 +11,23 @@ function browse(type) {
 
 <template>
   <div>
-    <h1 class="section-heading">{{ $t('baroqueart.nav.partners') }}</h1>
+    <h1 class="mwnf-heading">{{ $t('baroqueart.nav.partners') }}</h1>
 
-    <div class="content-box">
+    <div class="mwnf-panel">
       <I18nText tag="p" class="intro-text" keypath="baroqueart.partner.introDiscover" />
 
-      <table class="form-table filter-table">
+      <table class="mwnf-form-table filter-table">
         <tbody>
           <tr>
             <th><label>{{ $t('partner.list.museums') }}</label></th>
             <td>
-              <button class="btn" @click="browse('museum')">{{ $t('baroqueart.action.browseMuseums') }} →</button>
+              <button class="mwnf-button" @click="browse('museum')">{{ $t('baroqueart.action.browseMuseums') }} →</button>
             </td>
           </tr>
           <tr>
             <th><label>{{ $t('baroqueart.partner.others') }}</label></th>
             <td>
-              <button class="btn" @click="browse('institution')">{{ $t('baroqueart.action.browseInstitutions') }} →</button>
+              <button class="mwnf-button" @click="browse('institution')">{{ $t('baroqueart.action.browseInstitutions') }} →</button>
             </td>
           </tr>
         </tbody>

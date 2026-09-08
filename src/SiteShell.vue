@@ -1,48 +1,26 @@
 <script setup>
-// PageShell with the legacy MWNF header lockup ("Museum With No Frontiers"
-// over "Baroque Art") supplied through the header slot. All other PageShell
-// props and the update:language event pass through untouched via $attrs.
-import { computed } from 'vue'
-import { useI18n, useSection } from '@metanull/viewer-core'
-import { PageShell } from '@metanull/viewer-layout'
-
-const { t } = useI18n()
-
-// The menu is built here rather than in dataset.config.js because a label is a
-// text and a text is only available inside the application: `t` needs the
-// installed catalogue, and every name has to be written out where it is used
-// so `viewer-i18n-check` can see it. The config keeps what is not a text —
-// the offered languages — and PageShell receives these links after $attrs, so
-// they take precedence over anything the config still passes.
-// The legacy site's own top-level sections, in its own order — this site has no
-// Dynasties or Artistic Introduction. Which entry is active is the section the
-// route declares (`meta.section`), read through viewer-core's `useSection()`
-// — never derived from the path.
-const section = useSection()
-const navLinks = computed(() => [
-  { label: t('core.nav.home'), href: '#/', active: section.value === 'home' },
-  { label: t('baroqueart.nav.permanentCollection'), href: '#/permanent-collection', active: section.value === 'permanent-collection' },
-  { label: t('baroqueart.nav.database'), href: '#/database', active: section.value === 'database' },
-  { label: t('baroqueart.nav.timeline'), href: '#/timeline', active: section.value === 'timeline' },
-  { label: t('baroqueart.nav.partners'), href: '#/partners', active: section.value === 'partners' },
-  { label: t('baroqueart.nav.exhibitions'), href: '#/exhibitions', active: section.value === 'exhibitions' },
-])
+// A mount of the layout's SiteShell: the menu links, the active entry (off
+// `meta.section` through viewer-core's `useSection()`) and the offered
+// languages all come from `dataset.config.js`'s `navigation`, read inside
+// SiteShell itself through `useSiteConfig()`. All that is left here is the
+// header lockup ("Museum With No Frontiers" over "Baroque Art"), through the
+// `#brand` slot — SiteShell renders it beside the computed nav links, unlike
+// a full `#header` override. The footer line stays a prop rather than a
+// config field: it is a text, and a text is only available inside the
+// application, where `t()` runs against the installed catalogue.
+import { SiteShell } from '@metanull/viewer-layout/components'
 </script>
 
 <template>
-  <PageShell
-    v-bind="$attrs"
-    :nav-links="navLinks"
-    :footer-text="$t('baroqueart.identity.copyright')"
-  >
-    <template #header>
+  <SiteShell v-bind="$attrs" :footer-text="$t('baroqueart.identity.copyright')">
+    <template #brand>
       <a class="site-logo" href="#/">
         <span class="site-logo-org">{{ $t('baroqueart.identity.organisation') }}</span>
         <span class="site-logo-title">{{ $t('baroqueart.identity.title') }}</span>
       </a>
     </template>
     <slot />
-  </PageShell>
+  </SiteShell>
 </template>
 
 <style scoped>

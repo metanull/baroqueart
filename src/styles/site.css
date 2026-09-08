@@ -1,9 +1,10 @@
 /*
  * Global styles shared by every Baroque Art view: the legacy palette
- * variables the views reference, plus the shared content-box and form
- * building blocks carried over from the previous site. Lists, pagination,
- * filters and summaries are viewer-layout's, themed in theme/tokens.css.
- * Page chrome (header, nav, footer) is themed via theme/tokens.css instead.
+ * variables the views reference, and the site's own colours. The shared
+ * content blocks a page assembles a layout from (panels, headings, tables,
+ * buttons, selects, the back-link bar) are viewer-layout's `.mwnf-*` content
+ * classes now; page chrome (header, nav, footer) is themed via
+ * theme/tokens.css instead.
  */
 @import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400&family=Roboto+Condensed:ital,wght@0,300;0,400;0,700;1,400&display=swap');
 
@@ -53,44 +54,11 @@ a:hover {
   text-decoration: underline;
 }
 
-/* ── Shared content-box ─────────────────────────────────────────────────── */
-.content-box {
-  background: var(--content-bg);
-  border: 1px solid var(--border);
-  padding: 20px;
-  margin-bottom: 16px;
-}
-
-/* ── Section heading ─────────────────────────────────────────────────────── */
-.section-heading {
-  font-size: 18px;
-  font-weight: 400;
-  color: var(--heading);
-  border-bottom: 2px solid var(--accent);
-  padding-bottom: 4px;
-  margin-bottom: 14px;
-}
-
-/* ── Form elements ──────────────────────────────────────────────────────── */
-.form-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.form-table th {
-  text-align: right;
-  padding: 6px 12px 6px 0;
-  font-weight: 500;
-  font-size: 12px;
-  color: var(--muted);
-  width: 160px;
-  vertical-align: middle;
-}
-.form-table td {
-  padding: 6px 0;
-  vertical-align: middle;
-}
-
-select,
+/* ── Text inputs ────────────────────────────────────────────────────────────
+ * No shared content class covers a raw text/number input (only `.mwnf-select`
+ * does), so the one page that still writes one (the Database results' refine
+ * row) keeps this site's own field styling.
+ */
 input[type='text'],
 input[type='number'] {
   font-family: inherit;
@@ -102,53 +70,19 @@ input[type='number'] {
   border-radius: 0;
   width: auto;
 }
-select:focus,
 input:focus {
   outline: 1px solid var(--accent);
 }
 
-.btn {
-  display: inline-block;
-  padding: 6px 18px;
-  background: var(--accent);
-  color: var(--nav-fg);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  border: none;
-  cursor: pointer;
-  letter-spacing: 0.03em;
-}
-.btn:hover {
-  background: var(--accent-soft);
-}
-.btn-secondary {
-  background: var(--border);
-  color: var(--text);
-}
-.btn-secondary:hover {
-  background: var(--accent-pale);
-  color: #fff;
-}
-
-/* ── Back link ──────────────────────────────────────────────────────────── */
-.back-link {
-  display: inline-block;
-  margin-bottom: 12px;
-  font-size: 13px;
+/* ── mwnf-back-bar, themed for a link ────────────────────────────────────────
+ * The shared class themes a <button> (its `.mwnf-back-bar button` rule); this
+ * site's own back controls are route links, so the bar is themed for an
+ * anchor too, in the site's own muted/active colours.
+ */
+.mwnf-back-bar a {
   color: var(--muted);
 }
-.back-link:hover {
+.mwnf-back-bar a:hover {
   color: var(--nav-active);
-}
-
-.timeline-link {
-  display: inline-block;
-  margin-bottom: 12px;
-  margin-left: 16px;
-  font-size: 13px;
-  color: var(--muted);
-}
-.timeline-link:hover {
-  color: var(--nav-active);
+  text-decoration: underline;
 }

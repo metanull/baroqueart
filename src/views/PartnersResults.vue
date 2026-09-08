@@ -24,9 +24,9 @@ const spec = computed(() => ({
 </script>
 
 <template>
-  <PartnerListView :spec="spec" class="content-box">
+  <PartnerListView :spec="spec" class="mwnf-panel">
     <template #before>
-      <RouterLink to="/partners" class="back-link">‹ {{ $t('partner.nav.back') }}</RouterLink>
+      <div class="mwnf-back-bar"><RouterLink to="/partners">‹ {{ $t('partner.nav.back') }}</RouterLink></div>
       <p class="type-switch">
         <RouterLink :to="{ path: '/partners/results', query: { type: otherType } }">{{ otherTypeLabel }}</RouterLink>
       </p>

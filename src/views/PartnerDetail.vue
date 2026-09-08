@@ -33,9 +33,9 @@ function normalizeUrl(url) {
 </script>
 
 <template>
-  <RecordView :spec="partnerSheet" :id="id" class="detail content-box">
+  <RecordView :spec="partnerSheet" :id="id" class="detail mwnf-panel">
     <template #header="{ record, text, language, languages, select, dir, glossary }">
-      <a class="back-link" href="#" @click.prevent="back">← {{ $t('partner.nav.back') }}</a>
+      <div class="mwnf-back-bar"><a href="#" @click.prevent="back">← {{ $t('partner.nav.back') }}</a></div>
       <div><span class="detail-type-badge">{{ record.type === 'institution' ? $t('partner.info.typeInstitution') : $t('partner.info.typeMuseum') }}</span></div>
       <RecordLanguages :languages="languages" :language="language" @select="select" />
       <h1 class="detail-title" :dir="dir" v-html="mdInline(text.name ?? record.id, glossary)"></h1>
@@ -43,7 +43,7 @@ function normalizeUrl(url) {
 
     <template #before-sheet="{ record, text }">
       <div v-if="record.item_count" class="view-items-row">
-        <RouterLink :to="viewItemsLink(record)" class="btn">{{ viewItemsLabel(record) }} ({{ record.item_count }}) →</RouterLink>
+        <RouterLink :to="viewItemsLink(record)" class="mwnf-button">{{ viewItemsLabel(record) }} ({{ record.item_count }}) →</RouterLink>
         <a v-if="text.website" :href="normalizeUrl(text.website)" target="_blank" rel="noopener" class="homepage-link">
           {{ $t('baroqueart.action.visitWebsite') }} ↗
         </a>
@@ -56,9 +56,6 @@ function normalizeUrl(url) {
         :latitude="record.latitude"
         :longitude="record.longitude"
         :zoom="record.map_zoom ?? 15"
-        map-title-entry="partner.map.map"
-        map-of-entry="partner.map.mapOf"
-        open-map-link-entry="gallery.action.openInOpenStreetMap"
         :label="mapLabel(record, text)"
       />
     </template>

@@ -2,6 +2,16 @@ import { fileURLToPath } from 'node:url'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 
+// Not `defineViewerConfig` from `@metanull/viewer-core/testing` (as the kit
+// intends — see its own viteConfig.js): that barrel also re-exports
+// `mountSite`, which pulls in `createViewer.js`'s direct `AppRoot.vue`
+// import. Vite's own config loader treats a bare package import as external
+// and hands it to Node's native ESM loader, which cannot parse `.vue` — so
+// importing the barrel here crashes `vite build`/`vitest run` before this
+// website's own code even runs (reproduced identically against the released
+// @metanull/viewer-core@1.12.3 from a sibling site's checkout, so this is
+// the package's own defect, not a local misconfiguration). This file keeps
+// the shape `defineViewerConfig` returns, written out by hand instead.
 export default defineConfig({
   // GitHub Pages serves the site under /<repo>/; the deploy workflow sets
   // BASE_PATH accordingly. Local dev and root deployments use /.
