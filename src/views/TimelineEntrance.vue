@@ -7,8 +7,8 @@ import { timelineEntrance } from '../composables/timeline.js'
 <template>
   <TimelineResultsView :spec="timelineEntrance">
     <template #before>
-      <h1 class="section-heading">{{ $t('baroqueart.nav.timeline') }}</h1>
-      <div class="content-box">
+      <h1 class="mwnf-heading">{{ $t('baroqueart.nav.timeline') }}</h1>
+      <div class="mwnf-panel">
         <I18nText tag="p" class="intro-text" keypath="baroqueart.timeline.intro" />
       </div>
     </template>

@@ -55,17 +55,17 @@ const themeCards = computed(() => {
   <NotFoundView v-if="!exhibition" />
 
   <div v-else>
-    <a class="back-link" href="#" @click.prevent="$router.push('/exhibitions')">← {{ t('exhibition.chapter.returnToExhibitions') }}</a>
+    <div class="mwnf-back-bar"><a href="#" @click.prevent="$router.push('/exhibitions')">← {{ t('exhibition.chapter.returnToExhibitions') }}</a></div>
 
-    <h1 class="section-heading" v-html="mdInline(text.title ?? exhibition.internal_name)" />
+    <h1 class="mwnf-heading" v-html="mdInline(text.title ?? exhibition.internal_name)" />
 
-    <div class="content-box">
+    <div class="mwnf-panel">
       <h2 v-if="text.extra?.subtitle" v-html="mdInline(text.extra.subtitle)" />
       <div v-if="text.description" class="mwnf-sheet__block" v-html="md(text.description)" />
       <p v-if="text.extra?.credits" v-html="mdInline(text.extra.credits)" />
     </div>
 
-    <div class="content-box">
+    <div class="mwnf-panel">
       <SectionCards v-if="themeCards.length" :cards="themeCards" variant="rows" />
       <p v-else>{{ t('baroqueart.exhibition.empty') }}</p>
     </div>

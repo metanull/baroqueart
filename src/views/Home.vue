@@ -27,7 +27,7 @@ const featuredText = computed(() => (featured.value ? tr('items', featured.value
 
 <template>
   <div class="home">
-    <div class="home-banner content-box">
+    <div class="home-banner mwnf-panel">
       <h1 class="home-title">{{ $t('baroqueart.home.title') }}</h1>
       <I18nText tag="p" class="home-intro" keypath="baroqueart.home.intro" />
     </div>
@@ -36,7 +36,7 @@ const featuredText = computed(() => (featured.value ? tr('items', featured.value
 
     <FeaturedRecord
       v-if="featured"
-      class="content-box"
+      class="mwnf-panel"
       :heading="$t('baroqueart.home.itemOnDisplay')"
       :image="featured.images?.[0]?.url ?? ''"
       :image-alt="itemLabel(featured)"

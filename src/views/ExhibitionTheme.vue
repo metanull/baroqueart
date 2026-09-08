@@ -65,7 +65,7 @@ function nextPage(id) {
 </script>
 
 <template>
-  <EssayView :key="exhibitionId" :spec="spec" :id="activeId" class="content-box">
+  <EssayView :key="exhibitionId" :spec="spec" :id="activeId" class="mwnf-panel">
     <template #navigation="{ node }">
       <div class="mwnf-essay__nav">
         <router-link v-if="previousPage(node.id)" :to="route_(previousPage(node.id))" class="mwnf-essay__nav-link mwnf-essay__nav-link--previous">

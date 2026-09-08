@@ -12,9 +12,9 @@ import { searchEntrance } from '../composables/search.js'
 
 <template>
   <div>
-    <h1 class="section-heading">{{ $t('baroqueart.nav.database') }}</h1>
+    <h1 class="mwnf-heading">{{ $t('baroqueart.nav.database') }}</h1>
 
-    <div class="content-box">
+    <div class="mwnf-panel">
       <SearchFormView :spec="searchEntrance">
         <template #intro>
           <I18nText tag="p" class="intro-text" keypath="catalogue.search.intro" />

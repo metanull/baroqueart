@@ -62,11 +62,11 @@ const thgGalleryLinks = (record) =>
 </script>
 
 <template>
-  <RecordView :spec="itemSheet" :id="id" class="detail content-box">
+  <RecordView :spec="itemSheet" :id="id" class="detail mwnf-panel">
     <template #header="{ record, text, language, languages, select, dir, glossary }">
-      <div class="detail-top">
-        <a class="back-link" href="#" @click.prevent="back">← {{ $t('record.action.backToResults') }}</a>
-        <router-link v-if="timelineLink(record)" :to="timelineLink(record)" class="timeline-link">{{ $t('record.action.viewOnTimeline') }} →</router-link>
+      <div class="mwnf-back-bar detail-top">
+        <a href="#" @click.prevent="back">← {{ $t('record.action.backToResults') }}</a>
+        <router-link v-if="timelineLink(record)" :to="timelineLink(record)">{{ $t('record.action.viewOnTimeline') }} →</router-link>
       </div>
       <!-- In a block of its own: the view lays the header out as a column,
            and a badge placed directly in it would stretch to the full width. -->
@@ -113,7 +113,9 @@ const thgGalleryLinks = (record) =>
 </template>
 
 <style scoped>
-.detail-top { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+/* mwnf-back-bar is one link wide; this page puts two side by side, so the
+   row layout stays the site's own on top of the shared bar. */
+.detail-top { display: flex; justify-content: space-between; gap: 10px; }
 
 .detail-type-badge {
   display: inline-block;
