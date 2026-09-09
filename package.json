@@ -19,7 +19,7 @@
     "@metanull/viewer-i18n": "^3.0.1",
     "@metanull/viewer-layout": "^2.11.1",
     "vue": "^3.5.0",
-    "vue-router": "^5.0.0"
+    "vue-router": "^5.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
