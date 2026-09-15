@@ -1,4 +1,4 @@
-import { languageLabels, offeredLanguages, useDataPackage } from '@metanull/viewer-core'
+import { languageLabels, offeredLanguages, useDataPackage } from '@museumwnf/viewer-core'
 import SiteShell from './SiteShell.vue'
 
 // The whole declaration of this website. Before it mounts, the website reads
@@ -22,7 +22,7 @@ const meta = (section, entities = []) => ({ section, entities })
 export default {
   // The dataset package this website renders. Must match the alias in
   // vite.config.js and the dependency in package.json.
-  datasetPackage: '@metanull/baroqueart-data',
+  datasetPackage: '@museumwnf/baroqueart-data',
 
   siteName: manifest.site?.names?.en ?? 'Baroque Art',
 

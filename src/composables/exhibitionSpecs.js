@@ -1,4 +1,4 @@
-import { renderInline } from '@metanull/viewer-core'
+import { renderInline } from '@museumwnf/viewer-core'
 import { useInventoryData } from './useInventoryData.js'
 
 // The two `EssayView` specs this site declares: an exhibition's theme (its

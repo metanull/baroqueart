@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { CatalogueResultsView } from '@metanull/viewer-layout/views'
+import { CatalogueResultsView } from '@museumwnf/viewer-layout/views'
 import { timelineGallery } from '../composables/timeline.js'
 
 const route = useRoute()

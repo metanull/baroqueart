@@ -1,9 +1,9 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { timelineLinkFor } from '@metanull/viewer-core'
-import { MediaGallery, RecordLanguages, SheetSection } from '@metanull/viewer-layout/content'
-import { RecordView } from '@metanull/viewer-layout/views'
+import { timelineLinkFor } from '@museumwnf/viewer-core'
+import { MediaGallery, RecordLanguages, SheetSection } from '@museumwnf/viewer-layout/content'
+import { RecordView } from '@museumwnf/viewer-layout/views'
 import { useInventoryData } from '../composables/useInventoryData.js'
 import { exhibitionLinksForItem } from '../composables/exhibitions.js'
 import { itemSheet } from '../composables/sheet.js'

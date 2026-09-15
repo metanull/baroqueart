@@ -1,7 +1,7 @@
 <script setup>
 import { watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { CatalogueResultsView } from '@metanull/viewer-layout/views'
+import { CatalogueResultsView } from '@museumwnf/viewer-layout/views'
 import { useInventoryData } from '../composables/useInventoryData.js'
 import { searchResults, useSearchFieldLabels } from '../composables/search.js'
 

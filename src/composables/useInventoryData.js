@@ -1,4 +1,4 @@
-import { useCatalogueData, useDataPackage } from '@metanull/viewer-core'
+import { useCatalogueData, useDataPackage } from '@museumwnf/viewer-core'
 
 // The website's records, read the one way every website reads them: through
 // viewer-core, lazily. Each entity is a shared ref that stays `null` until a

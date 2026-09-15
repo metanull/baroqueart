@@ -8,7 +8,7 @@
 // a full `#header` override. The footer line stays a prop rather than a
 // config field: it is a text, and a text is only available inside the
 // application, where `t()` runs against the installed catalogue.
-import { SiteShell } from '@metanull/viewer-layout/components'
+import { SiteShell } from '@museumwnf/viewer-layout/components'
 </script>
 
 <template>

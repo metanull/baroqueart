@@ -1,8 +1,8 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { useI18n, NotFoundView } from '@metanull/viewer-core'
-import { SectionCards } from '@metanull/viewer-layout/content'
+import { useI18n, NotFoundView } from '@museumwnf/viewer-core'
+import { SectionCards } from '@museumwnf/viewer-layout/content'
 import { exhibitionsTree } from '../composables/exhibitions.js'
 import { useInventoryData } from '../composables/useInventoryData.js'
 

@@ -1,4 +1,4 @@
-import { useCollectionTree } from '@metanull/viewer-core'
+import { useCollectionTree } from '@museumwnf/viewer-core'
 import { useInventoryData } from './useInventoryData.js'
 
 // The Exhibitions tree — exhibitions-root → exhibition → theme → page — was
