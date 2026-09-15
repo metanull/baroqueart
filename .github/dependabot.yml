@@ -10,7 +10,7 @@ updates:
   # They stay ignored because their updates are deliberate, not automatic: a
   # release of any of them is rolled out to every consuming site by hand, one
   # pull request per site, right after the release, through the
-  # release-then-propagate procedure in metanull/viewer-workflows
+  # release-then-propagate procedure in museumwithnofrontiers/viewer-workflows
   # (`tools/propagate.mjs`). A Dependabot bump would race that procedure and
   # could land a platform version this site was never actually walked
   # through.
@@ -26,7 +26,7 @@ updates:
     ignore:
       - dependency-name: "@museumwnf/*"
 
-  # The reusable workflows in metanull/viewer-workflows are pinned to an exact
+  # The reusable workflows in museumwithnofrontiers/viewer-workflows are pinned to an exact
   # version in .github/workflows/*.yml, never to a moving major tag. Dependabot
   # covers reusable-workflow refs as well as step-level actions, so a new
   # viewer-workflows release arrives here as a pull request that runs this

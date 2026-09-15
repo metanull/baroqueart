@@ -10,5 +10,5 @@ permissions:
 jobs:
   deploy:
     # Nothing to deploy from the template itself - see ci.yml.
-    if: github.repository != 'metanull/website-template'
+    if: ${{ !endsWith(github.repository, '/website-template') }}
     uses: museumwithnofrontiers/viewer-workflows/.github/workflows/website-deploy-pages.yml@v1.7.0
