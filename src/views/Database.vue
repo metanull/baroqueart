@@ -1,6 +1,6 @@
 <script setup>
-import { I18nText } from '@metanull/viewer-core'
-import { SearchFormView } from '@metanull/viewer-layout/views'
+import { I18nText } from '@museumwnf/viewer-core'
+import { SearchFormView } from '@museumwnf/viewer-layout/views'
 import { searchEntrance } from '../composables/search.js'
 
 // The search entrance: legacy database.php's three-row keyword form, kept

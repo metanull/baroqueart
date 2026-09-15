@@ -1,8 +1,8 @@
 <script setup>
 import { useRouter } from 'vue-router'
-import { useI18n } from '@metanull/viewer-core'
-import { PartnerMap, RecordLanguages, RelatedRecords } from '@metanull/viewer-layout/content'
-import { RecordView } from '@metanull/viewer-layout/views'
+import { useI18n } from '@museumwnf/viewer-core'
+import { PartnerMap, RecordLanguages, RelatedRecords } from '@museumwnf/viewer-layout/content'
+import { RecordView } from '@museumwnf/viewer-layout/views'
 import { heldItemRow, heldItems, mapLabel, partnerSheet } from '../composables/partner.js'
 import { useInventoryData } from '../composables/useInventoryData.js'
 

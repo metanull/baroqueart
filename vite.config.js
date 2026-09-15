@@ -1,8 +1,8 @@
 import vue from "@vitejs/plugin-vue"
-import { defineViewerConfig } from "@metanull/viewer-core/vite"
+import { defineViewerConfig } from "@museumwnf/viewer-core/vite"
 import { defineConfig } from "vite"
 
-const viewerConfig = defineViewerConfig({ dataPackage: "@metanull/baroqueart-data", plugins: [vue()] })
+const viewerConfig = defineViewerConfig({ dataPackage: "@museumwnf/baroqueart-data", plugins: [vue()] })
 
 export default defineConfig({
   base: process.env.BASE_PATH ?? "/",

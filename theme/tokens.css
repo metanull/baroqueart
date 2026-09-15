@@ -5,7 +5,7 @@
  * Art" site (discoverbaroqueart.org). This file belongs to the webdesigner.
  *
  * Full token documentation with explanations:
- * node_modules/@metanull/viewer-layout/src/tokens.reference.css
+ * node_modules/@museumwnf/viewer-layout/src/tokens.reference.css
  */
 
 :root {
@@ -158,7 +158,7 @@
   --mwnf-featured-meta-size: 0.8125rem;
   --mwnf-featured-meta-color: #5a5a5a;
 
-  /* ---------- Shared views (@metanull/viewer-core) ----------
+  /* ---------- Shared views (@museumwnf/viewer-core) ----------
    * Only the generic entity pages read these; the block goes away when the
    * page stories replace them (features.entities: []). The page shell
    * already centers and pads the content section, so the views inside it

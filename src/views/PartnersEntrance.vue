@@ -1,6 +1,6 @@
 <script setup>
 import { useRouter } from 'vue-router'
-import { I18nText } from '@metanull/viewer-core'
+import { I18nText } from '@museumwnf/viewer-core'
 
 const router = useRouter()
 

@@ -1,4 +1,4 @@
-import { dateRange, effectiveYearTo, eventDateLabel } from '@metanull/viewer-core'
+import { dateRange, effectiveYearTo, eventDateLabel } from '@museumwnf/viewer-core'
 import { useInventoryData } from './useInventoryData.js'
 import { DATE_MODE, PAGE_SIZE, permanentCollection } from './catalogue.js'
 

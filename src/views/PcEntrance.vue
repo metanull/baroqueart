@@ -1,6 +1,6 @@
 <script setup>
-import { I18nText } from '@metanull/viewer-core'
-import { SearchFormView } from '@metanull/viewer-layout/views'
+import { I18nText } from '@museumwnf/viewer-core'
+import { SearchFormView } from '@museumwnf/viewer-layout/views'
 import { pcEntrance } from '../composables/search.js'
 
 // The Permanent Collection entrance: one filter at a time, chosen by a

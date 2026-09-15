@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
-import { I18nText, useFeaturedRecord, useI18n } from '@metanull/viewer-core'
-import { FeaturedRecord, SectionCards } from '@metanull/viewer-layout/content'
+import { I18nText, useFeaturedRecord, useI18n } from '@museumwnf/viewer-core'
+import { FeaturedRecord, SectionCards } from '@museumwnf/viewer-layout/content'
 import { useInventoryData } from '../composables/useInventoryData.js'
 
 // The landing page: the welcome, the five sections as cards, and one item

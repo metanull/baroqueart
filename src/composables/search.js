@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import { centuryPresets, combineExpansions, countryExpansion, dateRange, glossaryExpansion, useFacets, useI18n, useKeywordIndex } from '@metanull/viewer-core'
+import { centuryPresets, combineExpansions, countryExpansion, dateRange, glossaryExpansion, useFacets, useI18n, useKeywordIndex } from '@museumwnf/viewer-core'
 import { useInventoryData } from './useInventoryData.js'
 import { DATE_MODE, FACETS, PAGE_SIZE, SEARCH_FIELDS, SEARCH_FIELD_OPTIONS } from './catalogue.js'
 
