@@ -52,7 +52,7 @@ You only need a GitHub account and a browser. The files under `locales/` hold
 
 Texts shared with the other MWNF websites — the skip link, the language
 chooser, the words "Home", "Previous" and "Next" — are not here: they live in
-[`viewer-i18n`](https://github.com/metanull/viewer-i18n) and are edited there,
+[`viewer-i18n`](https://github.com/museumwithnofrontiers/viewer-i18n) and are edited there,
 the same way. This website can override any of them by writing the same entry
 name in its own file. The museum content itself arrives already translated and
 is not edited anywhere.
@@ -131,7 +131,7 @@ For real design work, use the live preview:
 - Tests: `npm run test` runs `tests/smoke.test.js`, which mounts the app
   against the real data package. Add website-specific tests next to it.
 - CI (`.github/workflows/`) is a set of thin callers of
-  [`metanull/viewer-workflows`](https://github.com/metanull/viewer-workflows);
+  [`museumwithnofrontiers/viewer-workflows`](https://github.com/museumwithnofrontiers/viewer-workflows);
   build + test block, ESLint + `npm audit` report, locale PRs validate and
   auto-merge, a weekly audit opens issues on findings. No workflow takes a
   secret. The `@museumwnf` platform packages are deliberately excluded from
